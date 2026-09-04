@@ -83,6 +83,112 @@ Test-Case 'skips dependent grants when user creation fails' {
     Assert-True (@($result.results | Where-Object { $_.status -eq 'Skipped' }).Count -ge 1) 'Dependent operations were not skipped.'
 }
 
+Test-Case 'retains both joiner and joiner-manager creation dependencies' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $managerCreate = $plan.operations | Where-Object { $_.type -eq 'CreateUser' -and $_.employeeId -eq 'E005' }
+    $employeeCreate = $plan.operations | Where-Object { $_.type -eq 'CreateUser' -and $_.employeeId -eq 'E006' }
+    $setManager = $plan.operations | Where-Object { $_.type -eq 'SetManager' -and $_.employeeId -eq 'E006' }
+    Assert-True (@($setManager.dependsOn) -contains $managerCreate.operationId) 'SetManager must depend on the new manager creation.'
+    Assert-True (@($setManager.dependsOn) -contains $employeeCreate.operationId) 'SetManager must depend on the new employee creation.'
+}
+
+Test-Case 'replacement access depends on all obsolete managed access removals' {
+    $state = $data.CurrentState | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    ($state.users | Where-Object employeeId -eq 'E002').groupKeys = @('all-employees', 'finance', 'operations', 'external-project-x')
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $state
+    $removals = @($plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'RemoveGroupMember' })
+    $replacement = $plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'AddGroupMember' -and $_.groupKey -eq 'engineering' }
+    Assert-True ($removals.Count -eq 2) 'Expected two obsolete managed memberships.'
+    foreach ($removal in $removals) {
+        Assert-True (@($replacement.dependsOn) -contains $removal.operationId) "Replacement access did not depend on removal '$($removal.operationId)'."
+    }
+    Assert-True (@($plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.groupKey -eq 'external-project-x' }).Count -eq 0) 'Unmanaged access must remain untouched.'
+}
+
+Test-Case 'failed mover removal skips replacement while unrelated users continue' {
+    $state = $data.CurrentState | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    ($state.users | Where-Object employeeId -eq 'E002').groupKeys = @('all-employees', 'finance', 'operations', 'external-project-x')
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $state
+    $failedRemoval = $plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'RemoveGroupMember' } | Select-Object -First 1
+    $successfulRemoval = $plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'RemoveGroupMember' } | Select-Object -Last 1
+    $replacement = $plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'AddGroupMember' }
+    $unrelated = $plan.operations | Where-Object { $_.employeeId -eq 'E005' -and $_.type -eq 'CreateUser' }
+    $executor = {
+        param($operation, $runtime)
+        if ($operation.operationId -eq $failedRemoval.operationId) { throw 'simulated stale-access removal failure' }
+        if ($operation.type -eq 'CreateUser') { return [pscustomobject]@{ resolvedUserId = "mock-$($operation.employeeId)" } }
+        [pscustomobject]@{ message = 'mock success' }
+    }
+    $result = Invoke-LabPlan -Plan $plan -Executor $executor
+    Assert-True (($result.results | Where-Object operationId -eq $failedRemoval.operationId).status -eq 'Failed') 'The simulated removal failure was not recorded.'
+    Assert-True (($result.results | Where-Object operationId -eq $successfulRemoval.operationId).status -eq 'Succeeded') 'The other obsolete removal should still be attempted.'
+    Assert-True (($result.results | Where-Object operationId -eq $replacement.operationId).status -eq 'Skipped') 'Replacement access should be skipped after any obsolete removal fails.'
+    Assert-True (($result.results | Where-Object operationId -eq $unrelated.operationId).status -eq 'Succeeded') 'Unrelated users should continue.'
+}
+
+Test-Case 'refreshed mover state produces only outstanding transition work' {
+    $state = $data.CurrentState | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    $mover = $state.users | Where-Object employeeId -eq 'E002'
+    $mover.groupKeys = @('all-employees', 'finance', 'external-project-x')
+    $mover.department = 'Engineering'
+    $mover.managerEmployeeId = 'E004'
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $state
+    $removal = $plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'RemoveGroupMember' }
+    $replacement = $plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.type -eq 'AddGroupMember' }
+    Assert-True (@($removal).Count -eq 1 -and $removal.groupKey -eq 'finance') 'Re-plan should retain only the failed Finance removal.'
+    Assert-True (@($replacement.dependsOn) -contains $removal.operationId) 'Re-planned replacement must depend on the outstanding removal.'
+    Assert-True (@($plan.operations | Where-Object { $_.employeeId -eq 'E002' -and $_.groupKey -eq 'operations' }).Count -eq 0) 'Completed Operations removal should disappear after refresh.'
+}
+
+Test-Case 'leaver disable failure continues containment and fails overall' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $leaverOperations = @($plan.operations | Where-Object employeeId -eq 'E003')
+    $disable = $leaverOperations | Where-Object type -eq 'DisableUser'
+    $executor = {
+        param($operation, $runtime)
+        if ($operation.operationId -eq $disable.operationId) { throw 'simulated disable failure' }
+        if ($operation.type -eq 'CreateUser') { return [pscustomobject]@{ resolvedUserId = "mock-$($operation.employeeId)" } }
+        [pscustomobject]@{ message = 'mock success' }
+    }
+    $result = Invoke-LabPlan -Plan $plan -Executor $executor
+    Assert-True ($result.status -eq 'Failed' -and $result.failed -eq 1) 'Partial offboarding must fail overall.'
+    foreach ($operation in @($leaverOperations | Where-Object type -ne 'DisableUser')) {
+        Assert-True (($result.results | Where-Object operationId -eq $operation.operationId).status -eq 'Succeeded') "Leaver containment '$($operation.type)' did not continue."
+    }
+}
+
+Test-Case 'leaver revocation failure still removes managed access and fails overall' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $revoke = $plan.operations | Where-Object { $_.employeeId -eq 'E003' -and $_.type -eq 'RevokeSignInSessions' }
+    $removals = @($plan.operations | Where-Object { $_.employeeId -eq 'E003' -and $_.type -eq 'RemoveGroupMember' })
+    $executor = {
+        param($operation, $runtime)
+        if ($operation.operationId -eq $revoke.operationId) { throw 'simulated revocation failure' }
+        if ($operation.type -eq 'CreateUser') { return [pscustomobject]@{ resolvedUserId = "mock-$($operation.employeeId)" } }
+        [pscustomobject]@{ message = 'mock success' }
+    }
+    $result = Invoke-LabPlan -Plan $plan -Executor $executor
+    Assert-True ($result.status -eq 'Failed' -and $result.failed -eq 1) 'Revocation failure must fail offboarding overall.'
+    foreach ($removal in $removals) {
+        Assert-True (($result.results | Where-Object operationId -eq $removal.operationId).status -eq 'Succeeded') 'Managed access removal did not continue after revocation failure.'
+    }
+}
+
+Test-Case 'StopOnFailure halts after the first leaver failure' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $disable = $plan.operations | Where-Object { $_.employeeId -eq 'E003' -and $_.type -eq 'DisableUser' }
+    $calls = [Collections.Generic.List[string]]::new()
+    $executor = {
+        param($operation, $runtime)
+        $calls.Add([string]$operation.operationId)
+        if ($operation.operationId -eq $disable.operationId) { throw 'simulated disable failure' }
+        [pscustomobject]@{ message = 'unexpected success' }
+    }
+    $result = Invoke-LabPlan -Plan $plan -Executor $executor -StopOnFailure
+    Assert-True ($result.status -eq 'Failed' -and $result.failed -eq 1) 'Stopped execution must report failure.'
+    Assert-True ($calls.Count -eq 1) 'StopOnFailure should stop immediately after the first operation fails.'
+}
+
 Test-Case 'refuses an account marked outside lab scope' {
     $employees = @($data.Employees | ForEach-Object { $_.PSObject.Copy() })
     $state = $data.CurrentState | ConvertTo-Json -Depth 20 | ConvertFrom-Json

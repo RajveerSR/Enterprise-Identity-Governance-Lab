@@ -18,11 +18,13 @@ The planner reconciles direct membership only for configured `labManaged` groups
 
 ## Partial failure over automatic rollback
 
-Microsoft Graph operations are independent and non-transactional. The executor records each result, continues independent work, and skips operations whose prerequisites failed. It does not automatically restore access after a later error. The recovery action is to inspect results, refresh state and generate a new plan.
+Microsoft Graph operations are independent and non-transactional. The executor records each result, continues independent work, and skips operations whose prerequisites failed. Replacement mover access depends on every obsolete managed-membership removal for that transition, so a failed removal cannot leave old and new department access together. Unrelated identities continue. It does not automatically restore access after a later error. The recovery action is to inspect results, refresh state and generate a new plan containing only outstanding work.
 
 ## Leavers are disabled, not deleted
 
 Immediate deletion complicates legal hold, mailbox/data handoff, investigation and recovery. The lab demonstrates rapid containment followed by managed access removal. A separate retention-approved process can delete after the required period.
+
+Disablement, session revocation and managed-access removals are deliberately independent containment attempts. By default, a failed disable does not prevent revocation/removal, and a failed revocation does not prevent access removal. Any failure makes the overall result `Failed` and preserves per-operation evidence. `-StopOnFailure` is available for an operator who explicitly needs immediate halt semantics.
 
 ## Explicit exclusions
 

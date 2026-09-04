@@ -342,14 +342,16 @@ function New-LabAccessPlan {
 
         $desiredKeys = @(Get-DesiredGroupKeys -Employee $employee -Configuration $Configuration)
         $currentKeys = if ($user) { @($user.groupKeys) } else { @() }
+        $replacementDependencies = @($createDependency)
         foreach ($key in @($currentKeys | Sort-Object)) {
             if (($desiredKeys -notcontains $key) -and $groupsByKey.ContainsKey([string]$key) -and [bool]$groupsByKey[[string]$key].labManaged) {
                 Add-Operation -Type 'RemoveGroupMember' -Priority 30 -Employee $employee -User $user -GroupKey ([string]$key) -Reason 'Mover: remove obsolete lab-managed access.'
+                $replacementDependencies += [string]$operationDrafts[$operationDrafts.Count - 1].operationId
             }
         }
         foreach ($key in @($desiredKeys | Sort-Object)) {
             if ($currentKeys -notcontains $key) {
-                Add-Operation -Type 'AddGroupMember' -Priority 50 -Employee $employee -User $user -GroupKey ([string]$key) -DependsOn $createDependency -Reason 'Joiner or mover: grant access from the approved matrix.'
+                Add-Operation -Type 'AddGroupMember' -Priority 50 -Employee $employee -User $user -GroupKey ([string]$key) -DependsOn $replacementDependencies -Reason 'Joiner or mover: grant access from the approved matrix after obsolete managed access is removed.'
             }
         }
         if (-not [string]::IsNullOrWhiteSpace([string]$employee.ManagerEmployeeId)) {
@@ -449,7 +451,7 @@ function Invoke-LabPlan {
         })
         if ($blockedBy.Count -gt 0) {
             $statusByOperation[[string]$operation.operationId] = 'Skipped'
-            $results.Add([pscustomobject]@{ operationId = $operation.operationId; type = $operation.type; status = 'Skipped'; message = "Dependency did not succeed: $($blockedBy -join ', ')" })
+            $results.Add([pscustomobject]@{ operationId = $operation.operationId; employeeId = $operation.employeeId; type = $operation.type; groupKey = $operation.groupKey; status = 'Skipped'; message = "Dependency did not succeed: $($blockedBy -join ', ')" })
             continue
         }
         try {
@@ -460,20 +462,25 @@ function Invoke-LabPlan {
             }
             $message = if ($response.PSObject.Properties.Name -contains 'message') { [string]$response.message } else { '' }
             $statusByOperation[[string]$operation.operationId] = 'Succeeded'
-            $results.Add([pscustomobject]@{ operationId = $operation.operationId; type = $operation.type; status = 'Succeeded'; message = $message })
+            $results.Add([pscustomobject]@{ operationId = $operation.operationId; employeeId = $operation.employeeId; type = $operation.type; groupKey = $operation.groupKey; status = 'Succeeded'; message = $message })
         }
         catch {
             $statusByOperation[[string]$operation.operationId] = 'Failed'
-            $results.Add([pscustomobject]@{ operationId = $operation.operationId; type = $operation.type; status = 'Failed'; message = $_.Exception.Message })
+            $results.Add([pscustomobject]@{ operationId = $operation.operationId; employeeId = $operation.employeeId; type = $operation.type; groupKey = $operation.groupKey; status = 'Failed'; message = $_.Exception.Message })
             if ($StopOnFailure) { break }
         }
     }
+    $succeededCount = @($results | Where-Object status -eq 'Succeeded').Count
+    $failedCount = @($results | Where-Object status -eq 'Failed').Count
+    $skippedCount = @($results | Where-Object status -eq 'Skipped').Count
     [pscustomobject][ordered]@{
         planHash = [string]$Plan.integrity.value
         executedAtUtc = [DateTime]::UtcNow.ToString('o')
-        succeeded = @($results | Where-Object status -eq 'Succeeded').Count
-        failed = @($results | Where-Object status -eq 'Failed').Count
-        skipped = @($results | Where-Object status -eq 'Skipped').Count
+        status = if ($failedCount -gt 0 -or $skippedCount -gt 0) { 'Failed' } else { 'Succeeded' }
+        partiallyCompleted = $failedCount -gt 0 -and $succeededCount -gt 0
+        succeeded = $succeededCount
+        failed = $failedCount
+        skipped = $skippedCount
         results = @($results)
     }
 }

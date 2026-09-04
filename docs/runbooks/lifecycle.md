@@ -9,7 +9,7 @@
 
 ## Apply
 
-Use `Apply-LabPlan.ps1` only after setup approval. Preserve the result JSON. A nonzero exit indicates a failed or skipped operation. Do not edit and replay a stale plan: refresh state and re-plan.
+Use `Apply-LabPlan.ps1` only after setup approval. Preserve the result JSON. A nonzero exit and overall `Failed` status indicate a failed or skipped operation; `partiallyCompleted` identifies a run with both successes and failures. For movers, new managed access is skipped if any obsolete managed membership fails to be removed. Do not edit and replay a stale plan: refresh state and re-plan.
 
 ## Verify
 
@@ -28,3 +28,5 @@ Generate `New-LabCleanupPlan.ps1`, review it, and pass that plan through the sam
 2. Preserve the result record and Graph request/audit correlation data when available.
 3. Do not manually mark the synthetic convergence flag.
 4. Refresh state and generate a new plan; completed operations should disappear, while failed work remains.
+
+For leavers, the default is continued containment: attempt session revocation and every managed-membership removal even if disablement fails. This reduces residual access while retaining a visibly failed overall result. Use `-StopOnFailure` only as an explicit operational choice; it stops later containment attempts after the first error.
