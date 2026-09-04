@@ -9,10 +9,30 @@ PASS rejects a joiner UPN outside the configured namespace
 PASS converged repeated run produces no changes
 PASS continues independent work after partial failure
 PASS skips dependent grants when user creation fails
+PASS retains both joiner and joiner-manager creation dependencies
+PASS replacement access depends on all obsolete managed access removals
+PASS failed mover removal skips replacement while unrelated users continue
+PASS refreshed mover state produces only outstanding transition work
+PASS leaver disable failure continues containment and fails overall
+PASS leaver revocation failure still removes managed access and fails overall
+PASS StopOnFailure halts after the first leaver failure
 PASS refuses an account marked outside lab scope
 PASS refuses a protected emergency-access account even if mislabelled managed
 PASS rejects a UPN collision with a different directory identity
 PASS detects plan tampering
+PASS detects tenant metadata tampering
+PASS detects mode metadata tampering
+PASS requires managedUserObjectIds to be present and an array
+PASS allows a joiner plan with an explicit empty managed user array
+PASS apply boundary rejects malformed scope and protected targets
 PASS plan integrity survives a JSON file round trip
+PASS plan integrity supports zero and one operation JSON round trips
+PASS rejects unsupported plan and integrity payload versions
+PASS rejects missing, forward, and tampered dependencies
+PASS classifies only structured Graph not-found errors as absence
+PASS exports a complete mocked snapshot across membership pagination
+PASS treats a structured user 404 as absent
+PASS keeps Graph permission authentication throttling service and connectivity failures visible
+PASS keeps non-not-found manager failures visible
 
-12 passed; 0 failed
+32 passed; 0 failed

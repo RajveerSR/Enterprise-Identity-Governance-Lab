@@ -1,54 +1,69 @@
 # Claude Code review handoff
 
-## Implementation summary
+## Follow-up implementation summary
 
-- Added a PowerShell 5.1-compatible module for validated, deterministic JML planning, plan hashing, execution orchestration, Microsoft Graph v1.0 writes and state comparison.
-- Added synthetic organisation/employee/current/converged data and a non-secret Zero Trust integration manifest.
-- Added default-preview planning, read-only Graph snapshot, explicitly gated apply, verification, cleanup-preview and test entry points.
-- Added scope controls for exact managed user IDs, lab UPN prefix/domain, protected emergency UPNs and exact managed group IDs.
-- Added current Microsoft permissions/licensing documentation, lifecycle/PIM/access-review runbooks, interview narrative, SC-300 mapping and evidence checklist.
+- Plan schema 2 now hashes a deterministic payload containing schema version, integrity-payload version, mode, tenant ID, operation content and dependencies. Unsupported versions, duplicate/missing/forward dependencies and metadata changes fail verification. Zero-, one- and multi-operation JSON round trips pass.
+- `scope.managedUserObjectIds` is mandatory, non-null and array-typed. `[]` authorizes no existing users while allowing scoped joiners. Planner and apply-boundary checks share the same validation; emergency UPNs still override allow signals.
+- Every mover replacement group addition depends on all obsolete managed-group removals for that employee. One failed removal skips replacement access, while other removals and unrelated users continue. Refresh/re-plan retains only outstanding work.
+- Leaver containment is deliberately independent by default: disable, revoke and managed removals continue after another containment failure. Any failure/skipped action makes the overall result `Failed`; `partiallyCompleted` is explicit. `-StopOnFailure` is tested as an operator-selected alternative.
+- Graph export logic moved into an injectable module function. Only structured HTTP 404 or recognized Graph not-found codes mean absence. Message-only errors and 401/403/429/503/connectivity failures remain visible and prevent snapshot output. Pagination and manager/user behavior are mocked locally.
+- Permissions were rechecked on 4 September 2026 against official Microsoft Learn. Profile update (`User.ReadUpdate.All`) and manager assignment (`User.ReadWrite.All`) are separate; the combined write workflow retains `User.ReadWrite.All` because manager assignment requires it.
 
-## Tests run
+## Meaningful local commits
 
-Command on 4 September 2026:
+- `8c01b5e` — plan integrity and strict scope validation.
+- `9d498c3` — mover dependency and leaver failure semantics.
+- `e4a72c2` — structured read-only Graph export and permission/readiness documentation.
+- A final evidence/handoff commit follows these and should contain only version/reporting artifacts.
+
+No history was rewritten and nothing was pushed.
+
+## Regression and verification results
+
+Before fixes, the new regressions reproduced:
+
+- 13 passed / 3 failed for tenant/mode integrity and missing allowlist.
+- 21 passed / 6 failed after adding mover/leaver expectations.
+- 29 passed / 3 failed before the structured exporter seams existed.
+
+Final command:
 
 ```text
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\Invoke-Tests.ps1
 ```
 
-Result: **12 passed, 0 failed**. Coverage includes JML output, duplicate IDs, unknown departments, namespace and UPN-collision checks, converged repeated planning, partial failure continuation, dependent-operation skipping, unmanaged account protection, emergency-access protection, tamper detection and serialized-plan integrity.
+Result: **32 passed, 0 failed**. This includes existing unmanaged-membership and joiner/manager dependency coverage plus the follow-up regressions.
 
-`scripts/New-LabPlan.ps1` also completed and generated 17 expected preview operations. No tenant command was run.
+Local planning still produces **17 preview operations** (2 create, 1 update, 1 disable, 1 revoke, 6 add membership, 3 remove membership, 3 set manager) using plan schema 2 / integrity payload 1. The converged snapshot verifies with zero differences. Cleanup remains an 18-operation preview. The checked-in apply configuration stops at `allowMutation: false`. No tenant command was run.
 
-## Implemented / mocked / untested
+## Implemented, mocked and unverified
 
-- Implemented and locally tested: validation, access calculation, operation ordering, plan integrity, safety checks, convergence and executor failure semantics.
-- Mocked in tests: Graph executor success/failure and created-user ID propagation.
-- Implemented but untested against a tenant: Graph snapshot and all Graph mutations.
-- Documented only: tenant group creation, PIM activation and access review portal scenarios.
+- Locally executed: validation, reconciliation, plan serialization/integrity, scope boundary, executor dependency/failure behavior, converged verification, planning and cleanup preview.
+- Mocked: Graph user/manager 404s, pagination, created-user ID propagation, partial mutations, 401/403/429/503/connectivity failures.
+- Implemented but tenant-unverified: actual `Invoke-MgGraphRequest` response/error shapes, Graph snapshot, user/group/manager mutations and result correlation.
+- Documented only: tenant group creation, PIM activation and access review.
 
-## Known limitations
+## Known limitations and unresolved decisions
 
-- JSON plan hashes are integrity checks, not signed approvals.
-- State export reads only employees in the input and direct membership in configured groups; it does not model dynamic/transitive access, licences, app sessions, devices or Azure RBAC.
-- A live Graph snapshot cannot prove prior session revocation, so it conservatively sets the marker false. Repeated revocation is safe but may remain in a fresh plan.
-- No automatic retry/backoff or Graph batch support yet. Partial failures require state refresh and re-plan.
-- Create-user temporary password handoff is intentionally not implemented; apply creates it in memory and does not log it.
-- The Graph module's response shapes/error messages need tenant validation, especially 404 detection and pagination.
-- No cryptographic approval, administrative unit enforcement, workload identity/federated credential or production secret flow is included.
+- SHA-256 is change detection, not a signature, authenticated approval or provenance control.
+- Real Graph exception shapes may differ from mocks; first tenant work must be read-only and must confirm 404/pagination behavior.
+- State export covers exact input UPNs and direct configured-group memberships only, not transitive/dynamic access, licences, app sessions, devices or Azure RBAC.
+- A live snapshot cannot prove prior session revocation, so repeated revocation can remain planned.
+- No retry/backoff, batch support or automatic rollback. Recovery is refresh, inspect and re-plan.
+- Establish the disposable tenant, verified domain, five group IDs, emergency UPNs, any existing managed-user IDs, read-scope consent and operator access.
+- Choose a durable production ownership marker and a Temporary Access Pass or other approved onboarding handoff before production-style use.
+- Confirm the available tenant licence supports the chosen PIM/access-review options.
 
-## Unresolved decisions
+## First read-only tenant milestone
 
-- Select a disposable tenant and replace user/group/domain/tenant placeholders.
-- Choose the exact durable ownership marker for deployed users (schema extension, administrative unit or both).
-- Decide an approved temporary-password delivery method, or replace password onboarding with Temporary Access Pass in a later version.
-- Confirm whether the available tenant SKU supports the selected access-review options under its current licensing terms.
+Follow `docs/setup.md`: create ignored `organisation.local.json` and `employees.local.csv`, keep `allowMutation` false, fill real identifiers, connect with only `User.Read.All` and `GroupMember.ReadBasic.All`, export state, generate a plan and inspect every object/removal/dependency. Stop before apply. Any non-404 Graph failure must leave no new snapshot.
 
-## Specific review questions
+## Claude review checklist
 
-1. Can any crafted or stale plan bypass the apply-time UPN/group allowlists?
-2. Is operation dependency handling correct when one of several joiners fails?
-3. Are PowerShell 5.1 JSON/collection edge cases handled consistently, including zero/one operation plans?
-4. Do the documented delegated permissions remain least-privileged for the exact property set?
-5. Should disabling a user and session revocation be a stop-on-failure boundary before membership removal?
-6. Is the live state export's conservative session-revocation behavior explained clearly enough?
+- [ ] Recalculate/tamper schema-2 payload fields and confirm integrity fails as intended.
+- [ ] Try missing, null, scalar and empty `managedUserObjectIds` at planner and apply boundaries.
+- [ ] Trace E006's two create dependencies and an E002 multiple-removal failure.
+- [ ] Verify leaver default continuation, overall failure and `-StopOnFailure` behavior.
+- [ ] Inspect structured error extraction for likely Microsoft.Graph exception shapes and false-404 risk.
+- [ ] Recheck the split profile/manager permissions and read-only consent set against current official docs.
+- [ ] Confirm documentation does not present mocked output as tenant evidence.

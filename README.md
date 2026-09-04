@@ -2,12 +2,12 @@
 
 A small, plan-first Microsoft Entra identity administration lab for demonstrating joiner, mover and leaver (JML) controls, group-based access, least privilege, Privileged Identity Management (PIM), access reviews and defensible automation decisions.
 
-Status: **local v0.1 implemented and tested; Graph mutation, PIM and access reviews are prepared but not tenant-tested.** No tenant was changed during this scaffolding pass. Every checked-in identity, object ID, state snapshot and evidence sample is synthetic.
+Status: **local v0.2 implemented and tested; Graph mutation, PIM and access reviews are prepared but not tenant-tested.** No tenant was changed during either local implementation pass. Every checked-in identity, object ID, state snapshot and evidence sample is synthetic.
 
 ## What the demonstration shows
 
 - A fictional organisation, Northstar Analytics, with six employees, reporting lines, three departments and an explicit access matrix.
-- Deterministic reconciliation: desired HR-style CSV input + observed state -> an integrity-hashed change plan.
+- Deterministic reconciliation: desired HR-style CSV input + observed state -> a schema-2 change plan whose versioned checksum covers tenant, mode, operations and dependencies.
 - Joiners receive a cloud identity and only baseline, department and manager groups.
 - Movers lose obsolete lab-managed access before new access is granted.
 - Leavers are disabled, have sessions revoked, and lose only access this lab owns; identities are retained for audit/recovery.
@@ -42,6 +42,8 @@ Windows PowerShell 5.1 or PowerShell 7 can run the local workflow:
 ```
 
 The preview proposes 17 operations: two joiners, one department mover and one leaver. The verification command returns compliant for the converged synthetic state. Generated runs go to ignored `evidence/runs/`; they are not real evidence.
+
+The regression suite currently contains 32 tests. Graph export tests use mocked response/error objects, including pagination; they do not claim real tenant compatibility.
 
 Do not run the apply entry point until the tenant prerequisites and safety checklist in [setup](docs/setup.md) are complete. The checked-in configuration has `allowMutation: false`, placeholder IDs and cannot pass the apply gates.
 

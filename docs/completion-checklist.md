@@ -11,8 +11,9 @@ Evidence labels: **example** means synthetic/local; **tenant** must be captured 
 | Preview/apply separation | Default preview and gated apply script | Complete locally; tenant execution pending |
 | Idempotent convergence | Converged snapshot produces zero operations | Complete (automated test) |
 | Input/scope safety | Duplicate, unknown department, out-of-scope and emergency-account tests | Complete (automated tests) |
-| Partial failure | One failure recorded; independent work continues; dependencies skip | Complete (mocked test) |
-| Graph integration | Exact endpoints/scopes, read snapshot and write adapter | Implemented, untested in tenant |
+| Plan integrity | Schema/version, tenant, mode, operations and dependencies survive JSON and detect change | Complete (local tests; checksum is not approval) |
+| Partial failure | Mover replacement skips after failed removal; leaver containment continues but fails overall | Complete (mocked tests) |
+| Graph integration | Exact endpoints/scopes, paginated read snapshot and write adapter | Implemented; exporter errors mocked, tenant untested |
 | PIM activation | Settings, eligibility, approval, activation and expiry audit | Runbook complete; tenant/licence evidence pending |
 | Access review | Configuration, decisions, applied removal and audit | Runbook complete; tenant/licence evidence pending |
 | Entra role vs Azure RBAC | Comparison in access matrix and interview explanation | Complete (documentation) |

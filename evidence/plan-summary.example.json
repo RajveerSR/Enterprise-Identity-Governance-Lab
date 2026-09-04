@@ -1,6 +1,8 @@
 {
   "classification": "SYNTHETIC LOCAL EXAMPLE - NOT TENANT EVIDENCE",
   "generatedFrom": "config/employees.csv + config/current-state.example.json",
+  "planSchemaVersion": 2,
+  "integrityPayloadVersion": 1,
   "mode": "Preview",
   "operationCount": 17,
   "summary": {
