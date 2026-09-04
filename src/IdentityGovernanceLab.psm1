@@ -22,11 +22,46 @@ function Import-LabData {
     }
 }
 
+function ConvertTo-LabCanonicalValue {
+    param([AllowNull()]$Value)
+
+    if ($null -eq $Value) { return $null }
+    if ($Value -is [string] -or $Value -is [char] -or $Value -is [bool] -or $Value -is [ValueType]) { return $Value }
+
+    if ($Value -is [Collections.IDictionary]) {
+        $ordered = [ordered]@{}
+        foreach ($key in @($Value.Keys | ForEach-Object { [string]$_ } | Sort-Object)) {
+            $ordered[$key] = ConvertTo-LabCanonicalValue -Value $Value[$key]
+        }
+        return $ordered
+    }
+
+    if ($Value -is [Collections.IEnumerable]) {
+        $items = @($Value | ForEach-Object { ConvertTo-LabCanonicalValue -Value $_ })
+        Write-Output -NoEnumerate $items
+        return
+    }
+
+    $properties = [ordered]@{}
+    foreach ($property in @($Value.PSObject.Properties | Sort-Object Name)) {
+        $properties[$property.Name] = ConvertTo-LabCanonicalValue -Value $property.Value
+    }
+    return $properties
+}
+
 function Get-LabPlanHash {
     [CmdletBinding()]
-    param([Parameter(Mandatory)]$Operations)
+    param([Parameter(Mandatory)]$Plan)
 
-    $json = ConvertTo-Json -InputObject @($Operations) -Depth 20 -Compress
+    $canonicalOperations = @($Plan.operations | ForEach-Object { ConvertTo-LabCanonicalValue -Value $_ })
+    $payload = [ordered]@{
+        planSchemaVersion = [int]$Plan.schemaVersion
+        integrityPayloadVersion = [int]$Plan.integrity.payloadVersion
+        mode = [string]$Plan.mode
+        tenantId = [string]$Plan.tenantId
+        operations = $canonicalOperations
+    }
+    $json = ConvertTo-Json -InputObject $payload -Depth 30 -Compress
     $bytes = [Text.Encoding]::UTF8.GetBytes($json)
     $sha = [Security.Cryptography.SHA256]::Create()
     try {
@@ -34,6 +69,59 @@ function Get-LabPlanHash {
     }
     finally {
         $sha.Dispose()
+    }
+}
+
+function Assert-LabScopeConfiguration {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$Configuration)
+
+    if (-not ($Configuration.PSObject.Properties.Name -contains 'scope') -or $null -eq $Configuration.scope) {
+        throw 'Configuration requires a scope object.'
+    }
+    if (-not ($Configuration.scope.PSObject.Properties.Name -contains 'managedUserObjectIds')) {
+        throw 'Configuration scope.managedUserObjectIds is required and must be an array (an explicit empty array is allowed).'
+    }
+    $managedUserIds = $Configuration.scope.managedUserObjectIds
+    if ($null -eq $managedUserIds -or -not ($managedUserIds -is [System.Array])) {
+        throw 'Configuration scope.managedUserObjectIds must be a non-null array (an explicit empty array is allowed).'
+    }
+    $seenUserIds = @{}
+    foreach ($id in $managedUserIds) {
+        $parsedId = [guid]::Empty
+        if ([string]::IsNullOrWhiteSpace([string]$id) -or -not [guid]::TryParse([string]$id, [ref]$parsedId) -or $parsedId -eq [guid]::Empty) {
+            throw "Configuration scope.managedUserObjectIds contains invalid object ID '$id'."
+        }
+        if ($seenUserIds.ContainsKey($parsedId.ToString())) { throw "Configuration scope.managedUserObjectIds contains duplicate object ID '$id'." }
+        $seenUserIds[$parsedId.ToString()] = $true
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Configuration.scope.userPrincipalNamePrefix)) { throw 'Configuration requires scope.userPrincipalNamePrefix.' }
+    if ([string]::IsNullOrWhiteSpace([string]$Configuration.tenant.verifiedDomain)) { throw 'Configuration requires tenant.verifiedDomain.' }
+    if (-not ($Configuration.scope.protectedUserPrincipalNames -is [System.Array])) { throw 'Configuration scope.protectedUserPrincipalNames must be an array.' }
+}
+
+function Assert-LabPlanScope {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$Plan, [Parameter(Mandatory)]$Configuration)
+
+    Assert-LabScopeConfiguration -Configuration $Configuration
+    $protectedUpns = @($Configuration.scope.protectedUserPrincipalNames | ForEach-Object { ([string]$_).ToLowerInvariant() })
+    $upnPrefix = ([string]$Configuration.scope.userPrincipalNamePrefix).ToLowerInvariant()
+    $upnSuffix = '@' + ([string]$Configuration.tenant.verifiedDomain).ToLowerInvariant()
+    $managedGroupIds = @($Configuration.groups | Where-Object labManaged | ForEach-Object { [string]$_.id })
+    $managedUserIds = @($Configuration.scope.managedUserObjectIds | ForEach-Object { [string]$_ })
+
+    foreach ($operation in @($Plan.operations)) {
+        $upn = ([string]$operation.targetUserPrincipalName).ToLowerInvariant()
+        if ($protectedUpns -contains $upn -or -not $upn.EndsWith($upnSuffix) -or -not $upn.Split('@')[0].StartsWith($upnPrefix)) {
+            throw "Operation '$($operation.operationId)' targets a protected or out-of-scope UPN."
+        }
+        if ($operation.groupId -and $managedGroupIds -notcontains [string]$operation.groupId) {
+            throw "Operation '$($operation.operationId)' targets a group outside the managed allowlist."
+        }
+        if ($operation.targetUserId -and $managedUserIds -notcontains [string]$operation.targetUserId) {
+            throw "Operation '$($operation.operationId)' targets a user object outside the managed allowlist."
+        }
     }
 }
 
@@ -50,6 +138,7 @@ function Get-NormalizedBoolean {
 function Assert-LabInputs {
     param($Employees, $Configuration, $CurrentState)
 
+    Assert-LabScopeConfiguration -Configuration $Configuration
     if (@($Employees).Count -eq 0) { throw 'Employee input is empty.' }
     if ([int]$Configuration.schemaVersion -ne 1) { throw 'Unsupported organisation configuration schemaVersion.' }
     if ([int]$CurrentState.schemaVersion -ne 1) { throw 'Unsupported current-state schemaVersion.' }
@@ -126,9 +215,7 @@ function Test-IsLabManagedUser {
     $protected = @($Configuration.scope.protectedUserPrincipalNames | ForEach-Object { ([string]$_).ToLowerInvariant() })
     if ($protected -contains $upn) { return $false }
     if (-not [bool]$User.labManaged) { return $false }
-    if ($Configuration.scope.PSObject.Properties.Name -contains 'managedUserObjectIds') {
-        if (@($Configuration.scope.managedUserObjectIds) -notcontains [string]$User.id) { return $false }
-    }
+    if (@($Configuration.scope.managedUserObjectIds) -notcontains [string]$User.id) { return $false }
     $expectedSuffix = '@' + ([string]$Configuration.tenant.verifiedDomain).ToLowerInvariant()
     $expectedPrefix = ([string]$Configuration.scope.userPrincipalNamePrefix).ToLowerInvariant()
     return $upn.EndsWith($expectedSuffix) -and $upn.Split('@')[0].StartsWith($expectedPrefix)
@@ -290,29 +377,58 @@ function New-LabAccessPlan {
     foreach ($type in @('CreateUser','UpdateUser','DisableUser','RevokeSignInSessions','AddGroupMember','RemoveGroupMember','SetManager')) {
         $summary[$type] = @($operations | Where-Object type -eq $type).Count
     }
-    [pscustomobject][ordered]@{
-        schemaVersion = 1
+    $plan = [pscustomobject][ordered]@{
+        schemaVersion = 2
         mode = 'Preview'
         generatedAtUtc = [DateTime]::UtcNow.ToString('o')
         tenantId = [string]$Configuration.tenant.tenantId
         source = [string]$CurrentState.source
         summary = [pscustomobject]$summary
         operations = $operations
-        contentHash = Get-LabPlanHash -Operations $operations
+        integrity = [pscustomobject][ordered]@{
+            payloadVersion = 1
+            algorithm = 'SHA-256'
+            value = $null
+        }
         warnings = @(
             'Preview only: no tenant mutation has occurred.',
             'Only direct membership in configured lab-managed groups is reconciled.',
             'Synthetic snapshots and outputs are not tenant evidence.'
         )
     }
+    $plan.integrity.value = Get-LabPlanHash -Plan $plan
+    $plan
 }
 
 function Test-LabPlanIntegrity {
     [CmdletBinding()]
     param([Parameter(Mandatory)]$Plan)
-    if ([int]$Plan.schemaVersion -ne 1) { return $false }
-    $actual = Get-LabPlanHash -Operations @($Plan.operations)
-    return $actual -eq [string]$Plan.contentHash
+    try {
+        if (-not ($Plan.PSObject.Properties.Name -contains 'schemaVersion') -or [int]$Plan.schemaVersion -ne 2) { return $false }
+        if (-not ($Plan.PSObject.Properties.Name -contains 'integrity') -or $null -eq $Plan.integrity) { return $false }
+        if ([int]$Plan.integrity.payloadVersion -ne 1 -or [string]$Plan.integrity.algorithm -ne 'SHA-256') { return $false }
+        if ([string]$Plan.mode -ne 'Preview' -or [string]::IsNullOrWhiteSpace([string]$Plan.tenantId)) { return $false }
+        if (-not ($Plan.operations -is [System.Array])) { return $false }
+
+        $operationPositions = @{}
+        for ($index = 0; $index -lt @($Plan.operations).Count; $index++) {
+            $operation = $Plan.operations[$index]
+            if ([string]::IsNullOrWhiteSpace([string]$operation.operationId) -or $operationPositions.ContainsKey([string]$operation.operationId)) { return $false }
+            if (-not ($operation.dependsOn -is [System.Array])) { return $false }
+            $operationPositions[[string]$operation.operationId] = $index
+        }
+        for ($index = 0; $index -lt @($Plan.operations).Count; $index++) {
+            $operation = $Plan.operations[$index]
+            foreach ($dependency in @($operation.dependsOn)) {
+                if (-not $operationPositions.ContainsKey([string]$dependency)) { return $false }
+                if ($operationPositions[[string]$dependency] -ge $index) { return $false }
+            }
+        }
+
+        $actual = Get-LabPlanHash -Plan $Plan
+        return $actual -eq [string]$Plan.integrity.value
+    }
+    catch { return $false }
 }
 
 function Invoke-LabPlan {
@@ -353,7 +469,7 @@ function Invoke-LabPlan {
         }
     }
     [pscustomobject][ordered]@{
-        planHash = [string]$Plan.contentHash
+        planHash = [string]$Plan.integrity.value
         executedAtUtc = [DateTime]::UtcNow.ToString('o')
         succeeded = @($results | Where-Object status -eq 'Succeeded').Count
         failed = @($results | Where-Object status -eq 'Failed').Count
@@ -427,4 +543,4 @@ function Test-LabAccessState {
     }
 }
 
-Export-ModuleMember -Function Import-LabData, New-LabAccessPlan, Get-LabPlanHash, Test-LabPlanIntegrity, Invoke-LabPlan, Invoke-LabGraphOperation, Test-LabAccessState
+Export-ModuleMember -Function Import-LabData, New-LabAccessPlan, Assert-LabScopeConfiguration, Assert-LabPlanScope, Get-LabPlanHash, Test-LabPlanIntegrity, Invoke-LabPlan, Invoke-LabGraphOperation, Test-LabAccessState

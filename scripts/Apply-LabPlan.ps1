@@ -19,31 +19,13 @@ if (-not (Test-Path -LiteralPath $ConfigurationPath -PathType Leaf)) {
 $configuration = Get-Content -LiteralPath $ConfigurationPath -Raw | ConvertFrom-Json
 $plan = Get-Content -LiteralPath $PlanPath -Raw | ConvertFrom-Json
 
+Assert-LabScopeConfiguration -Configuration $configuration
 if (-not $ConfirmTenantMutation) { throw 'Explicit -ConfirmTenantMutation is required.' }
 if (-not [bool]$configuration.tenant.allowMutation) { throw 'tenant.allowMutation is false. No Graph writes were attempted.' }
 if ([string]$configuration.tenant.tenantId -eq '00000000-0000-0000-0000-000000000000') { throw 'Replace the placeholder tenant ID before applying.' }
 if ([string]$plan.tenantId -ne [string]$configuration.tenant.tenantId) { throw 'Plan tenant ID does not match configuration.' }
 if (-not (Test-LabPlanIntegrity -Plan $plan)) { throw 'Plan integrity check failed.' }
-
-# Recheck scope at the mutation boundary. The plan hash detects accidental edits;
-# this allowlist protects against a deliberately regenerated but over-broad plan.
-$protectedUpns = @($configuration.scope.protectedUserPrincipalNames | ForEach-Object { ([string]$_).ToLowerInvariant() })
-$upnPrefix = ([string]$configuration.scope.userPrincipalNamePrefix).ToLowerInvariant()
-$upnSuffix = '@' + ([string]$configuration.tenant.verifiedDomain).ToLowerInvariant()
-$managedGroupIds = @($configuration.groups | Where-Object labManaged | ForEach-Object { [string]$_.id })
-$managedUserIds = @($configuration.scope.managedUserObjectIds | ForEach-Object { [string]$_ })
-foreach ($operation in @($plan.operations)) {
-    $upn = ([string]$operation.targetUserPrincipalName).ToLowerInvariant()
-    if ($protectedUpns -contains $upn -or -not $upn.EndsWith($upnSuffix) -or -not $upn.Split('@')[0].StartsWith($upnPrefix)) {
-        throw "Operation '$($operation.operationId)' targets a protected or out-of-scope UPN."
-    }
-    if ($operation.groupId -and $managedGroupIds -notcontains [string]$operation.groupId) {
-        throw "Operation '$($operation.operationId)' targets a group outside the managed allowlist."
-    }
-    if ($operation.targetUserId -and $managedUserIds -notcontains [string]$operation.targetUserId) {
-        throw "Operation '$($operation.operationId)' targets a user object outside the managed allowlist."
-    }
-}
+Assert-LabPlanScope -Plan $plan -Configuration $configuration
 
 if (-not (Get-Command Get-MgContext -ErrorAction SilentlyContinue)) {
     throw 'Microsoft.Graph.Authentication is not loaded. See docs/setup.md.'

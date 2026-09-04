@@ -124,10 +124,106 @@ Test-Case 'detects plan tampering' {
     Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Tampered plan passed integrity validation.'
 }
 
+Test-Case 'detects tenant metadata tampering' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $plan.tenantId = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Tenant ID tampering passed integrity validation.'
+}
+
+Test-Case 'detects mode metadata tampering' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $plan.mode = 'Apply'
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Mode tampering passed integrity validation.'
+}
+
+Test-Case 'requires managedUserObjectIds to be present and an array' {
+    foreach ($invalidValue in @('__MISSING__', $null, '20000000-0000-0000-0000-000000000001')) {
+        $configuration = $data.Configuration | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+        if ($invalidValue -eq '__MISSING__') {
+            $configuration.scope.PSObject.Properties.Remove('managedUserObjectIds')
+        }
+        else {
+            $configuration.scope.managedUserObjectIds = $invalidValue
+        }
+        $threw = $false
+        try { $null = New-LabAccessPlan -Employees $data.Employees -Configuration $configuration -CurrentState $data.CurrentState } catch { $threw = $_.Exception.Message -like '*managedUserObjectIds*' }
+        Assert-True $threw "Invalid managedUserObjectIds value '$invalidValue' was not rejected."
+    }
+}
+
+Test-Case 'allows a joiner plan with an explicit empty managed user array' {
+    $configuration = $data.Configuration | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    $configuration.scope.managedUserObjectIds = @()
+    $state = [pscustomobject]@{ schemaVersion = 1; source = 'empty synthetic state'; users = @() }
+    $employee = $data.Employees | Where-Object EmployeeId -eq 'E001'
+    $plan = New-LabAccessPlan -Employees @($employee) -Configuration $configuration -CurrentState $state
+    Assert-True (@($plan.operations | Where-Object type -eq 'CreateUser').Count -eq 1) 'Explicit empty existing-user scope should still allow a controlled joiner.'
+}
+
+Test-Case 'apply boundary rejects malformed scope and protected targets' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $missingScope = $data.Configuration | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    $missingScope.scope.PSObject.Properties.Remove('managedUserObjectIds')
+    $malformedThrew = $false
+    try { Assert-LabPlanScope -Plan $plan -Configuration $missingScope } catch { $malformedThrew = $_.Exception.Message -like '*managedUserObjectIds*' }
+    Assert-True $malformedThrew 'Apply-boundary validation accepted a missing managed-user allowlist.'
+
+    $protectedPlan = $plan | ConvertTo-Json -Depth 30 | ConvertFrom-Json
+    $protectedPlan.operations[0].targetUserPrincipalName = 'breakglass-admin1@northstarlab.onmicrosoft.com'
+    $protectedPlan.integrity.value = Get-LabPlanHash -Plan $protectedPlan
+    Assert-True (Test-LabPlanIntegrity -Plan $protectedPlan) 'Protected-target test plan should have a valid change-detection hash.'
+    $protectedThrew = $false
+    try { Assert-LabPlanScope -Plan $protectedPlan -Configuration $data.Configuration } catch { $protectedThrew = $_.Exception.Message -like '*protected or out-of-scope*' }
+    Assert-True $protectedThrew 'Apply-boundary validation accepted an emergency-access target.'
+}
+
 Test-Case 'plan integrity survives a JSON file round trip' {
     $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
     $roundTrip = $plan | ConvertTo-Json -Depth 20 | ConvertFrom-Json
     Assert-True (Test-LabPlanIntegrity -Plan $roundTrip) 'Serialized plan did not retain its operation hash.'
+}
+
+Test-Case 'plan integrity supports zero and one operation JSON round trips' {
+    $converged = Get-Content -LiteralPath (Join-Path $root 'config\converged-state.example.json') -Raw | ConvertFrom-Json
+    $zeroPlan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $converged
+    $zeroRoundTrip = $zeroPlan | ConvertTo-Json -Depth 30 | ConvertFrom-Json
+    Assert-True (Test-LabPlanIntegrity -Plan $zeroRoundTrip) 'Zero-operation plan failed after serialization.'
+
+    $onePlan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $onePlan.operations = @($onePlan.operations[0])
+    $onePlan.integrity.value = Get-LabPlanHash -Plan $onePlan
+    $oneRoundTrip = $onePlan | ConvertTo-Json -Depth 30 | ConvertFrom-Json
+    Assert-True (Test-LabPlanIntegrity -Plan $oneRoundTrip) 'One-operation plan failed after serialization.'
+}
+
+Test-Case 'rejects unsupported plan and integrity payload versions' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $plan.schemaVersion = 999
+    $plan.integrity.value = Get-LabPlanHash -Plan $plan
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Unsupported plan schema version was accepted.'
+
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $plan.integrity.payloadVersion = 999
+    $plan.integrity.value = Get-LabPlanHash -Plan $plan
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Unsupported integrity payload version was accepted.'
+}
+
+Test-Case 'rejects missing, forward, and tampered dependencies' {
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $dependent = $plan.operations | Where-Object { @($_.dependsOn).Count -gt 0 } | Select-Object -First 1
+    $dependent.dependsOn = @('op-does-not-exist')
+    $plan.integrity.value = Get-LabPlanHash -Plan $plan
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Missing dependency was accepted.'
+
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $plan.operations[0].dependsOn = @($plan.operations[-1].operationId)
+    $plan.integrity.value = Get-LabPlanHash -Plan $plan
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Forward dependency was accepted.'
+
+    $plan = New-LabAccessPlan -Employees $data.Employees -Configuration $data.Configuration -CurrentState $data.CurrentState
+    $dependent = $plan.operations | Where-Object { @($_.dependsOn).Count -gt 0 } | Select-Object -First 1
+    $dependent.dependsOn = @()
+    Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Dependency tampering passed hash validation.'
 }
 
 Write-Host "`n$passed passed; $failed failed"

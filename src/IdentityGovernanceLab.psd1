@@ -8,6 +8,8 @@
     FunctionsToExport = @(
         'Import-LabData',
         'New-LabAccessPlan',
+        'Assert-LabScopeConfiguration',
+        'Assert-LabPlanScope',
         'Get-LabPlanHash',
         'Test-LabPlanIntegrity',
         'Invoke-LabPlan',
@@ -18,4 +20,3 @@
     VariablesToExport = @()
     AliasesToExport = @()
 }
-
