@@ -1,0 +1,15 @@
+{
+  "classification": "SYNTHETIC LOCAL EXAMPLE - NOT TENANT EVIDENCE",
+  "generatedFrom": "config/employees.csv + config/current-state.example.json",
+  "mode": "Preview",
+  "operationCount": 17,
+  "summary": {
+    "CreateUser": 2,
+    "UpdateUser": 1,
+    "DisableUser": 1,
+    "RevokeSignInSessions": 1,
+    "AddGroupMember": 6,
+    "RemoveGroupMember": 3,
+    "SetManager": 3
+  }
+}

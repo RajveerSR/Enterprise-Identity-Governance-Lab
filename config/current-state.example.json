@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "source": "Synthetic example - not tenant evidence",
+  "capturedAtUtc": "2026-09-04T08:00:00Z",
+  "users": [
+    {
+      "id": "20000000-0000-0000-0000-000000000001",
+      "employeeId": "E001",
+      "userPrincipalName": "eigl-maya.chen@northstarlab.onmicrosoft.com",
+      "displayName": "Maya Chen",
+      "jobTitle": "Operations Director",
+      "department": "Operations",
+      "managerEmployeeId": null,
+      "accountEnabled": true,
+      "labManaged": true,
+      "sessionsRevokedAfterTermination": false,
+      "groupKeys": ["all-employees", "operations", "people-managers"]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000002",
+      "employeeId": "E002",
+      "userPrincipalName": "eigl-liam.patel@northstarlab.onmicrosoft.com",
+      "displayName": "Liam Patel",
+      "jobTitle": "Platform Engineer",
+      "department": "Finance",
+      "managerEmployeeId": "E005",
+      "accountEnabled": true,
+      "labManaged": true,
+      "sessionsRevokedAfterTermination": false,
+      "groupKeys": ["all-employees", "finance", "external-project-x"]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000003",
+      "employeeId": "E003",
+      "userPrincipalName": "eigl-sofia.rossi@northstarlab.onmicrosoft.com",
+      "displayName": "Sofia Rossi",
+      "jobTitle": "Finance Analyst",
+      "department": "Finance",
+      "managerEmployeeId": "E005",
+      "accountEnabled": true,
+      "labManaged": true,
+      "sessionsRevokedAfterTermination": false,
+      "groupKeys": ["all-employees", "finance"]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000004",
+      "employeeId": "E004",
+      "userPrincipalName": "eigl-noah.williams@northstarlab.onmicrosoft.com",
+      "displayName": "Noah Williams",
+      "jobTitle": "Engineering Manager",
+      "department": "Engineering",
+      "managerEmployeeId": "E001",
+      "accountEnabled": true,
+      "labManaged": true,
+      "sessionsRevokedAfterTermination": false,
+      "groupKeys": ["all-employees", "engineering", "people-managers"]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000900",
+      "employeeId": "BREAKGLASS01",
+      "userPrincipalName": "breakglass-admin1@northstarlab.onmicrosoft.com",
+      "displayName": "Emergency Access 1",
+      "department": "Security",
+      "accountEnabled": true,
+      "labManaged": false,
+      "sessionsRevokedAfterTermination": false,
+      "groupKeys": []
+    }
+  ]
+}
+

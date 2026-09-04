@@ -1,0 +1,18 @@
+SYNTHETIC LOCAL TEST EVIDENCE - NOT TENANT EVIDENCE
+Run date: 2026-09-04
+Command: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\Invoke-Tests.ps1
+
+PASS plans joiner, mover, and leaver changes
+PASS rejects duplicate employee IDs before planning
+PASS rejects unknown departments before planning
+PASS rejects a joiner UPN outside the configured namespace
+PASS converged repeated run produces no changes
+PASS continues independent work after partial failure
+PASS skips dependent grants when user creation fails
+PASS refuses an account marked outside lab scope
+PASS refuses a protected emergency-access account even if mislabelled managed
+PASS rejects a UPN collision with a different directory identity
+PASS detects plan tampering
+PASS plan integrity survives a JSON file round trip
+
+12 passed; 0 failed

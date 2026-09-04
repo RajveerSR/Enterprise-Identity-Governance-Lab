@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "classification": "NON-SECRET EXAMPLE - replace placeholder object IDs after deployment",
+  "ownerRepository": "Enterprise-Identity-Governance-Lab",
+  "consumerRepository": "Zero Trust Identity & Conditional Access Lab",
+  "tenantId": "00000000-0000-0000-0000-000000000000",
+  "ordinaryIdentityScope": {
+    "userPrincipalNamePrefix": "eigl-",
+    "employeeGroupId": "10000000-0000-0000-0000-000000000001",
+    "managerGroupId": "10000000-0000-0000-0000-000000000005"
+  },
+  "protectedEmergencyAccessUserIds": [],
+  "protectedEmergencyAccessUserPrincipalNames": [
+    "breakglass-admin1@northstarlab.onmicrosoft.com",
+    "breakglass-admin2@northstarlab.onmicrosoft.com"
+  ],
+  "conditionalAccess": {
+    "managedHere": false,
+    "note": "The consuming repository owns all Conditional Access policies and exclusions."
+  }
+}
+

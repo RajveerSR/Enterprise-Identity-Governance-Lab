@@ -1,0 +1,6 @@
+# Generated plans and execution records. Curated examples use *.example.json.
+evidence/runs/*
+!evidence/runs/.gitkeep
+*.local.json
+*.secret.json
+

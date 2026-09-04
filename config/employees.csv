@@ -1,0 +1,8 @@
+EmployeeId,GivenName,Surname,DisplayName,UserPrincipalName,JobTitle,Department,ManagerEmployeeId,IsManager,Status
+E001,Maya,Chen,Maya Chen,eigl-maya.chen@northstarlab.onmicrosoft.com,Operations Director,Operations,,true,Active
+E002,Liam,Patel,Liam Patel,eigl-liam.patel@northstarlab.onmicrosoft.com,Platform Engineer,Engineering,E004,false,Active
+E003,Sofia,Rossi,Sofia Rossi,eigl-sofia.rossi@northstarlab.onmicrosoft.com,Finance Analyst,Finance,E005,false,Leaver
+E004,Noah,Williams,Noah Williams,eigl-noah.williams@northstarlab.onmicrosoft.com,Engineering Manager,Engineering,E001,true,Active
+E005,Aisha,Khan,Aisha Khan,eigl-aisha.khan@northstarlab.onmicrosoft.com,Finance Manager,Finance,E001,true,Active
+E006,Ethan,Jones,Ethan Jones,eigl-ethan.jones@northstarlab.onmicrosoft.com,Financial Accountant,Finance,E005,false,Active
+

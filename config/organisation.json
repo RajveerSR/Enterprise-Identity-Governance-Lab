@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "organisationName": "Northstar Analytics",
+  "tenant": {
+    "tenantId": "00000000-0000-0000-0000-000000000000",
+    "verifiedDomain": "northstarlab.onmicrosoft.com",
+    "allowMutation": false
+  },
+  "scope": {
+    "userPrincipalNamePrefix": "eigl-",
+    "groupDisplayNamePrefix": "EIGL-",
+    "managedUserObjectIds": [
+      "20000000-0000-0000-0000-000000000001",
+      "20000000-0000-0000-0000-000000000002",
+      "20000000-0000-0000-0000-000000000003",
+      "20000000-0000-0000-0000-000000000004",
+      "20000000-0000-0000-0000-000000000005",
+      "20000000-0000-0000-0000-000000000006"
+    ],
+    "protectedUserPrincipalNames": [
+      "breakglass-admin1@northstarlab.onmicrosoft.com",
+      "breakglass-admin2@northstarlab.onmicrosoft.com"
+    ]
+  },
+  "baselineGroupKeys": ["all-employees"],
+  "managerGroupKey": "people-managers",
+  "groups": [
+    {
+      "key": "all-employees",
+      "id": "10000000-0000-0000-0000-000000000001",
+      "displayName": "EIGL-All-Employees",
+      "type": "Security",
+      "labManaged": true
+    },
+    {
+      "key": "engineering",
+      "id": "10000000-0000-0000-0000-000000000002",
+      "displayName": "EIGL-Engineering",
+      "type": "Security",
+      "labManaged": true
+    },
+    {
+      "key": "finance",
+      "id": "10000000-0000-0000-0000-000000000003",
+      "displayName": "EIGL-Finance",
+      "type": "Security",
+      "labManaged": true
+    },
+    {
+      "key": "operations",
+      "id": "10000000-0000-0000-0000-000000000004",
+      "displayName": "EIGL-Operations",
+      "type": "Security",
+      "labManaged": true
+    },
+    {
+      "key": "people-managers",
+      "id": "10000000-0000-0000-0000-000000000005",
+      "displayName": "EIGL-People-Managers",
+      "type": "Security",
+      "labManaged": true
+    }
+  ],
+  "departments": [
+    { "name": "Engineering", "accessGroupKeys": ["engineering"] },
+    { "name": "Finance", "accessGroupKeys": ["finance"] },
+    { "name": "Operations", "accessGroupKeys": ["operations"] }
+  ]
+}
