@@ -20,6 +20,10 @@ The planner reconciles direct membership only for configured `labManaged` groups
 
 Microsoft Graph operations are independent and non-transactional. The executor records each result, continues independent work, and skips operations whose prerequisites failed. Replacement mover access depends on every obsolete managed-membership removal for that transition, so a failed removal cannot leave old and new department access together. Unrelated identities continue. It does not automatically restore access after a later error. The recovery action is to inspect results, refresh state and generate a new plan containing only outstanding work.
 
+## Complete-or-error state export
+
+The read-only exporter writes a snapshot only after every required group page, user lookup and manager lookup completes. It suppresses only structured HTTP 404 or recognized Graph resource-not-found codes. It never infers absence from exception-message text; permission, authentication, connectivity, throttling and service failures remain errors. Mocked coverage validates this contract and pagination, but does not establish the exact error shape returned by a real tenant/module version.
+
 ## Leavers are disabled, not deleted
 
 Immediate deletion complicates legal hold, mailbox/data handoff, investigation and recovery. The lab demonstrates rapid containment followed by managed access removal. A separate retention-approved process can delete after the required period.

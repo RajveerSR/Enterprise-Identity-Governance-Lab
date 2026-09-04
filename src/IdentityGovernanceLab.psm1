@@ -485,6 +485,160 @@ function Invoke-LabPlan {
     }
 }
 
+function Get-LabNestedValue {
+    param([AllowNull()]$InputObject, [Parameter(Mandatory)][string[]]$Path)
+
+    $current = $InputObject
+    foreach ($segment in $Path) {
+        if ($null -eq $current) { return $null }
+        if ($current -is [Collections.IDictionary]) {
+            if (-not $current.Contains($segment)) { return $null }
+            $current = $current[$segment]
+            continue
+        }
+        $property = $current.PSObject.Properties[$segment]
+        if ($null -eq $property) { return $null }
+        $current = $property.Value
+    }
+    $current
+}
+
+function Get-LabGraphErrorDetails {
+    param([Parameter(Mandatory)]$ErrorObject)
+
+    $exception = if ($ErrorObject -is [Management.Automation.ErrorRecord]) { $ErrorObject.Exception } else { $ErrorObject }
+    $roots = @($ErrorObject, $exception) | Where-Object { $null -ne $_ } | Select-Object -Unique
+    $statusCode = $null
+    foreach ($rootObject in $roots) {
+        foreach ($path in @(
+            @('ResponseStatusCode'),
+            @('StatusCode'),
+            @('Response', 'StatusCode'),
+            @('InnerException', 'ResponseStatusCode'),
+            @('InnerException', 'Response', 'StatusCode')
+        )) {
+            $candidate = Get-LabNestedValue -InputObject $rootObject -Path $path
+            if ($null -ne $candidate) {
+                try { $statusCode = [int]$candidate; break } catch { }
+            }
+        }
+        if ($null -ne $statusCode) { break }
+    }
+
+    $apiCode = $null
+    foreach ($rootObject in $roots) {
+        foreach ($path in @(@('Error', 'Code'), @('Body', 'Error', 'Code'), @('InnerException', 'Error', 'Code'), @('Code'))) {
+            $candidate = Get-LabNestedValue -InputObject $rootObject -Path $path
+            if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { $apiCode = [string]$candidate; break }
+        }
+        if ($apiCode) { break }
+    }
+
+    if (-not $apiCode) {
+        $responseBodies = @(
+            (Get-LabNestedValue -InputObject $ErrorObject -Path @('ErrorDetails', 'Message')),
+            (Get-LabNestedValue -InputObject $exception -Path @('ResponseBody'))
+        )
+        foreach ($responseBody in $responseBodies) {
+            if ([string]::IsNullOrWhiteSpace([string]$responseBody) -or -not ([string]$responseBody).TrimStart().StartsWith('{')) { continue }
+            try {
+                $parsedBody = [string]$responseBody | ConvertFrom-Json
+                $candidate = Get-LabNestedValue -InputObject $parsedBody -Path @('error', 'code')
+                if ($candidate) { $apiCode = [string]$candidate; break }
+            }
+            catch { }
+        }
+    }
+
+    [pscustomobject]@{ StatusCode = $statusCode; ApiCode = $apiCode }
+}
+
+function Test-LabGraphNotFoundError {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$ErrorObject)
+
+    $details = Get-LabGraphErrorDetails -ErrorObject $ErrorObject
+    if ($null -ne $details.StatusCode) { return [int]$details.StatusCode -eq 404 }
+    @('Request_ResourceNotFound', 'ResourceNotFound', 'itemNotFound') -contains [string]$details.ApiCode
+}
+
+function Get-LabGraphStateSnapshot {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Employees,
+        [Parameter(Mandatory)]$Configuration,
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][scriptblock]$RequestInvoker
+    )
+
+    $emptyState = [pscustomobject]@{ schemaVersion = 1; source = 'Graph export validation'; users = @() }
+    Assert-LabInputs -Employees $Employees -Configuration $Configuration -CurrentState $emptyState
+
+    $memberIdsByGroupKey = @{}
+    foreach ($group in @($Configuration.groups | Where-Object labManaged)) {
+        $ids = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        $uri = "https://graph.microsoft.com/v1.0/groups/$($group.id)/members?`$select=id"
+        while (-not [string]::IsNullOrWhiteSpace([string]$uri)) {
+            $page = & $RequestInvoker 'GET' $uri
+            foreach ($member in @(Get-LabNestedValue -InputObject $page -Path @('value'))) {
+                $memberId = Get-LabNestedValue -InputObject $member -Path @('id')
+                if (-not [string]::IsNullOrWhiteSpace([string]$memberId)) { $null = $ids.Add([string]$memberId) }
+            }
+            $uri = [string](Get-LabNestedValue -InputObject $page -Path @('@odata.nextLink'))
+        }
+        $memberIdsByGroupKey[[string]$group.key] = $ids
+    }
+
+    $users = [Collections.Generic.List[object]]::new()
+    $managedUserIds = @($Configuration.scope.managedUserObjectIds | ForEach-Object { [string]$_ })
+    foreach ($employee in @($Employees)) {
+        $encodedUpn = [Uri]::EscapeDataString([string]$employee.UserPrincipalName)
+        try {
+            $user = & $RequestInvoker 'GET' "https://graph.microsoft.com/v1.0/users/$encodedUpn`?`$select=id,employeeId,userPrincipalName,displayName,jobTitle,department,accountEnabled"
+        }
+        catch {
+            if (Test-LabGraphNotFoundError -ErrorObject $_) { continue }
+            throw
+        }
+        $userId = [string](Get-LabNestedValue -InputObject $user -Path @('id'))
+        if ([string]::IsNullOrWhiteSpace($userId)) { throw "Graph returned a user without an object ID for '$($employee.EmployeeId)'." }
+        $groupKeys = @($memberIdsByGroupKey.Keys | Where-Object { $memberIdsByGroupKey[$_].Contains($userId) } | Sort-Object)
+        $users.Add([pscustomobject][ordered]@{
+            id = $userId
+            employeeId = [string](Get-LabNestedValue -InputObject $user -Path @('employeeId'))
+            userPrincipalName = [string](Get-LabNestedValue -InputObject $user -Path @('userPrincipalName'))
+            displayName = [string](Get-LabNestedValue -InputObject $user -Path @('displayName'))
+            jobTitle = [string](Get-LabNestedValue -InputObject $user -Path @('jobTitle'))
+            department = [string](Get-LabNestedValue -InputObject $user -Path @('department'))
+            managerEmployeeId = $null
+            accountEnabled = [bool](Get-LabNestedValue -InputObject $user -Path @('accountEnabled'))
+            labManaged = $managedUserIds -contains $userId
+            sessionsRevokedAfterTermination = $false
+            groupKeys = $groupKeys
+        })
+    }
+
+    $employeeIdByObjectId = @{}
+    foreach ($user in $users) { $employeeIdByObjectId[[string]$user.id] = [string]$user.employeeId }
+    foreach ($user in $users) {
+        try {
+            $manager = & $RequestInvoker 'GET' "https://graph.microsoft.com/v1.0/users/$($user.id)/manager?`$select=id"
+            $managerId = [string](Get-LabNestedValue -InputObject $manager -Path @('id'))
+            if ($managerId -and $employeeIdByObjectId.ContainsKey($managerId)) { $user.managerEmployeeId = $employeeIdByObjectId[$managerId] }
+        }
+        catch {
+            if (-not (Test-LabGraphNotFoundError -ErrorObject $_)) { throw }
+        }
+    }
+
+    [pscustomobject][ordered]@{
+        schemaVersion = 1
+        source = "Microsoft Graph tenant $TenantId"
+        capturedAtUtc = [DateTime]::UtcNow.ToString('o')
+        users = @($users)
+    }
+}
+
 function New-TemporaryLabPassword {
     $bytes = New-Object byte[] 24
     $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
@@ -550,4 +704,4 @@ function Test-LabAccessState {
     }
 }
 
-Export-ModuleMember -Function Import-LabData, New-LabAccessPlan, Assert-LabScopeConfiguration, Assert-LabPlanScope, Get-LabPlanHash, Test-LabPlanIntegrity, Invoke-LabPlan, Invoke-LabGraphOperation, Test-LabAccessState
+Export-ModuleMember -Function Import-LabData, New-LabAccessPlan, Assert-LabScopeConfiguration, Assert-LabPlanScope, Get-LabPlanHash, Test-LabPlanIntegrity, Invoke-LabPlan, Test-LabGraphNotFoundError, Get-LabGraphStateSnapshot, Invoke-LabGraphOperation, Test-LabAccessState

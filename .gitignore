@@ -2,5 +2,5 @@
 evidence/runs/*
 !evidence/runs/.gitkeep
 *.local.json
+*.local.csv
 *.secret.json
-

@@ -4,15 +4,17 @@ Checked against Microsoft Learn on 4 September 2026. Use delegated access for th
 
 | Operation | Graph v1.0 endpoint | Least-privileged delegated permission used/needed | Notes |
 |---|---|---|---|
-| Read users | `GET /users/{id}` | `User.Read.All` | Exact configured UPNs are read, not a broad mutation target. |
+| Read user profile | `GET /users/{id}` | `User.Read.All` | Exact configured UPNs are read, not a broad mutation target. |
+| Read manager | `GET /users/{id}/manager` | `User.Read.All` | Current documentation supports delegated access; application permission is not supported for this endpoint. |
 | Create user | `POST /users` | `User.Create` | Current docs list `User.Create` for delegated and application access. |
-| Update profile/manager | `PATCH /users/{id}`; `PUT /users/{id}/manager/$ref` | `User.ReadWrite.All` | Manager assignment specifically requires `User.ReadWrite.All`. |
-| Disable account | `PATCH /users/{id}` | `User.EnableDisableAccount.All` + `User.Read.All` | Least-privileged combination for `accountEnabled`; the operator also needs a supported directory role. |
+| Update profile | `PATCH /users/{id}` | `User.ReadUpdate.All` | Exact least-privileged permission for fields used here such as display name, job title and department. The combined workflow still needs `User.ReadWrite.All` for manager assignment. |
+| Assign manager | `PUT /users/{id}/manager/$ref` | `User.ReadWrite.All` | Kept in the workflow consent set because `User.ReadUpdate.All` does not authorize manager assignment. |
+| Enable/disable account | `PATCH /users/{id}` | `User.EnableDisableAccount.All` + `User.Read.All` | Used by leaver disablement and active-user re-enable; the operator also needs a supported directory role. |
 | Revoke sessions | `POST /users/{id}/revokeSignInSessions` | `User.RevokeSessions.All` | May take several minutes; does not revoke external users' home-tenant sessions. |
 | Read groups/membership | `GET /groups/{id}/members` | `GroupMember.ReadBasic.All` | Hidden membership would also need `Member.Read.Hidden`; this lab does not use it. |
 | Add/remove user membership | `POST .../members/$ref`; `DELETE .../members/{id}/$ref` | `GroupMember.ReadWrite.All` | Role-assignable groups additionally need `RoleManagement.ReadWrite.Directory`; this lab forbids them. Always retain `/$ref` when removing. |
 
-Microsoft sources: [create user](https://learn.microsoft.com/en-us/graph/api/user-post-users?view=graph-rest-1.0), [update user/accountEnabled](https://learn.microsoft.com/en-us/graph/api/user-update?view=graph-rest-1.0), [assign manager](https://learn.microsoft.com/en-us/graph/api/user-post-manager?view=graph-rest-1.0), [revoke sessions](https://learn.microsoft.com/en-us/graph/api/user-revokesigninsessions?view=graph-rest-1.0), [list group members](https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0), [add member](https://learn.microsoft.com/en-us/graph/api/group-post-members?view=graph-rest-1.0), and [remove member](https://learn.microsoft.com/en-us/graph/api/group-delete-members?view=graph-rest-1.0).
+Microsoft sources: [create user](https://learn.microsoft.com/en-us/graph/api/user-post-users?view=graph-rest-1.0), [update user/accountEnabled](https://learn.microsoft.com/en-us/graph/api/user-update?view=graph-rest-1.0), [read manager](https://learn.microsoft.com/en-us/graph/api/user-list-manager?view=graph-rest-1.0), [assign manager](https://learn.microsoft.com/en-us/graph/api/user-post-manager?view=graph-rest-1.0), [revoke sessions](https://learn.microsoft.com/en-us/graph/api/user-revokesigninsessions?view=graph-rest-1.0), [list group members](https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0), [add member](https://learn.microsoft.com/en-us/graph/api/group-post-members?view=graph-rest-1.0), and [remove member](https://learn.microsoft.com/en-us/graph/api/group-delete-members?view=graph-rest-1.0).
 
 ## Entra directory role prerequisites
 
@@ -28,4 +30,4 @@ Delegated permissions do not replace the signed-in user's directory authorizatio
 - Delegated admin consent for only the scopes above.
 - For the manager snapshot endpoint, use delegated authentication; the current API table does not support application permission for `GET /users/{id}/manager`.
 
-The checked-in configuration cannot mutate a tenant. See [setup](setup.md) for the opt-in flow.
+For the first read-only milestone, request only `User.Read.All` and `GroupMember.ReadBasic.All`. The write scopes belong to the later, separately approved apply session. The checked-in configuration cannot mutate a tenant. See [setup](setup.md) for the staged flow.

@@ -12,6 +12,13 @@ $data = Import-LabData `
 $passed = 0
 $failed = 0
 function Assert-True { param([bool]$Condition, [string]$Message) if (-not $Condition) { throw $Message } }
+function New-TestGraphException {
+    param([AllowNull()]$StatusCode, [AllowNull()][string]$ApiCode, [string]$Message = 'opaque Graph failure')
+    $exception = New-Object System.Exception $Message
+    if ($null -ne $StatusCode) { $exception | Add-Member -NotePropertyName ResponseStatusCode -NotePropertyValue $StatusCode }
+    if ($ApiCode) { $exception | Add-Member -NotePropertyName Error -NotePropertyValue ([pscustomobject]@{ Code = $ApiCode }) }
+    $exception
+}
 function Test-Case {
     param([string]$Name, [scriptblock]$Body)
     try { & $Body; $script:passed++; Write-Host "PASS $Name" -ForegroundColor Green }
@@ -330,6 +337,88 @@ Test-Case 'rejects missing, forward, and tampered dependencies' {
     $dependent = $plan.operations | Where-Object { @($_.dependsOn).Count -gt 0 } | Select-Object -First 1
     $dependent.dependsOn = @()
     Assert-True (-not (Test-LabPlanIntegrity -Plan $plan)) 'Dependency tampering passed hash validation.'
+}
+
+Test-Case 'classifies only structured Graph not-found errors as absence' {
+    $http404 = New-TestGraphException -StatusCode 404 -ApiCode $null
+    $apiNotFound = New-TestGraphException -StatusCode $null -ApiCode 'Request_ResourceNotFound'
+    $messageOnly = New-TestGraphException -StatusCode $null -ApiCode $null -Message '404 Request_ResourceNotFound'
+    $forbidden = New-TestGraphException -StatusCode 403 -ApiCode 'Authorization_RequestDenied'
+    Assert-True (Test-LabGraphNotFoundError -ErrorObject $http404) 'Structured HTTP 404 was not classified as not found.'
+    Assert-True (Test-LabGraphNotFoundError -ErrorObject $apiNotFound) 'Structured Graph resource-not-found code was not classified as not found.'
+    Assert-True (-not (Test-LabGraphNotFoundError -ErrorObject $messageOnly)) 'Message-only 404 text must not be trusted.'
+    Assert-True (-not (Test-LabGraphNotFoundError -ErrorObject $forbidden)) 'Permission denial must not be treated as absence.'
+}
+
+Test-Case 'exports a complete mocked snapshot across membership pagination' {
+    $configuration = $data.Configuration | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    $employee = $data.Employees | Where-Object EmployeeId -eq 'E001'
+    $userId = '20000000-0000-0000-0000-000000000001'
+    $firstGroupId = [string]$configuration.groups[0].id
+    $calls = @{}
+    $request = {
+        param($method, $uri)
+        $calls[$uri] = 1 + [int]$calls[$uri]
+        if ($uri -eq 'https://mock.invalid/group-page-2') { return @{ value = @(@{ id = $userId }) } }
+        if ($uri -like "*/groups/$firstGroupId/members*") { return @{ value = @(@{ id = 'unrelated-id' }); '@odata.nextLink' = 'https://mock.invalid/group-page-2' } }
+        if ($uri -like '*/groups/*/members*') { return @{ value = @() } }
+        if ($uri -like '*/manager?*') { throw (New-TestGraphException -StatusCode 404 -ApiCode 'Request_ResourceNotFound') }
+        if ($uri -like '*/users/*') {
+            return @{ id = $userId; employeeId = 'E001'; userPrincipalName = 'eigl-maya.chen@northstarlab.onmicrosoft.com'; displayName = 'Maya Chen'; jobTitle = 'Operations Director'; department = 'Operations'; accountEnabled = $true }
+        }
+        throw "Unexpected URI $uri"
+    }
+    $snapshot = Get-LabGraphStateSnapshot -Employees @($employee) -Configuration $configuration -TenantId 'mock-tenant' -RequestInvoker $request
+    Assert-True (@($snapshot.users).Count -eq 1) 'Expected one exported user.'
+    Assert-True (@($snapshot.users[0].groupKeys) -contains 'all-employees') 'Paginated membership was not included.'
+    Assert-True ($calls['https://mock.invalid/group-page-2'] -eq 1) 'Next membership page was not requested exactly once.'
+    Assert-True ($null -eq $snapshot.users[0].managerEmployeeId) 'A genuine manager 404 should produce no manager.'
+}
+
+Test-Case 'treats a structured user 404 as absent' {
+    $employee = $data.Employees | Where-Object EmployeeId -eq 'E001'
+    $request = {
+        param($method, $uri)
+        if ($uri -like '*/groups/*') { return @{ value = @() } }
+        throw (New-TestGraphException -StatusCode 404 -ApiCode 'Request_ResourceNotFound')
+    }
+    $snapshot = Get-LabGraphStateSnapshot -Employees @($employee) -Configuration $data.Configuration -TenantId 'mock-tenant' -RequestInvoker $request
+    Assert-True (@($snapshot.users).Count -eq 0) 'A genuine user 404 should be represented as absence.'
+}
+
+Test-Case 'keeps Graph permission authentication throttling service and connectivity failures visible' {
+    $employee = $data.Employees | Where-Object EmployeeId -eq 'E001'
+    $failures = @(
+        @{ status = 401; code = 'InvalidAuthenticationToken'; message = 'authentication' },
+        @{ status = 403; code = 'Authorization_RequestDenied'; message = 'permission' },
+        @{ status = 429; code = 'TooManyRequests'; message = 'throttling' },
+        @{ status = 503; code = 'ServiceUnavailable'; message = 'service' },
+        @{ status = $null; code = $null; message = 'network unavailable' },
+        @{ status = $null; code = $null; message = '404 Request_ResourceNotFound' }
+    )
+    foreach ($failure in $failures) {
+        $request = {
+            param($method, $uri)
+            if ($uri -like '*/groups/*') { return @{ value = @() } }
+            throw (New-TestGraphException -StatusCode $failure.status -ApiCode $failure.code -Message $failure.message)
+        }
+        $threw = $false
+        try { $null = Get-LabGraphStateSnapshot -Employees @($employee) -Configuration $data.Configuration -TenantId 'mock-tenant' -RequestInvoker $request } catch { $threw = $true }
+        Assert-True $threw "Graph failure '$($failure.message)' was suppressed into an incomplete snapshot."
+    }
+}
+
+Test-Case 'keeps non-not-found manager failures visible' {
+    $employee = $data.Employees | Where-Object EmployeeId -eq 'E001'
+    $request = {
+        param($method, $uri)
+        if ($uri -like '*/groups/*') { return @{ value = @() } }
+        if ($uri -like '*/manager?*') { throw (New-TestGraphException -StatusCode 403 -ApiCode 'Authorization_RequestDenied') }
+        return @{ id = '20000000-0000-0000-0000-000000000001'; employeeId = 'E001'; userPrincipalName = 'eigl-maya.chen@northstarlab.onmicrosoft.com'; displayName = 'Maya Chen'; jobTitle = 'Operations Director'; department = 'Operations'; accountEnabled = $true }
+    }
+    $threw = $false
+    try { $null = Get-LabGraphStateSnapshot -Employees @($employee) -Configuration $data.Configuration -TenantId 'mock-tenant' -RequestInvoker $request } catch { $threw = $true }
+    Assert-True $threw 'Manager permission failure was suppressed into a misleading null manager.'
 }
 
 Write-Host "`n$passed passed; $failed failed"

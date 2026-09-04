@@ -13,6 +13,8 @@
         'Get-LabPlanHash',
         'Test-LabPlanIntegrity',
         'Invoke-LabPlan',
+        'Test-LabGraphNotFoundError',
+        'Get-LabGraphStateSnapshot',
         'Invoke-LabGraphOperation',
         'Test-LabAccessState'
     )
