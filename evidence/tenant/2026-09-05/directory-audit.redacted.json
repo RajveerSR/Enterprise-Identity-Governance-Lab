@@ -1,0 +1,219 @@
+{
+  "classification": "Real service-side directory audit records selected by exact lab target IDs; rows are not a one-to-one operation count",
+  "capturedAtUtc": "2026-09-05T19:22:38.967004+00:00",
+  "windowStartUtc": "2026-09-04T16:06:00Z",
+  "windowEndUtc": "2026-09-04T16:12:00Z",
+  "sourceRecordCount": 27,
+  "selectedRecordCount": 25,
+  "events": [
+    {
+      "activityDateTime": "2026-09-04T16:08:21.028039Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:10.5108675Z",
+      "activityDisplayName": "Set user manager",
+      "result": "success",
+      "labTargets": [
+        "Ethan Jones (E006)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:10.3998507Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Ethan Jones (E006)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:10.2915069Z",
+      "activityDisplayName": "Set user manager",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:10.1815037Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:10.0719545Z",
+      "activityDisplayName": "Set user manager",
+      "result": "success",
+      "labTargets": [
+        "Liam Smith (E002)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:09.9769549Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Liam Smith (E002)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:09.8654621Z",
+      "activityDisplayName": "Add member to group",
+      "result": "success",
+      "labTargets": [
+        "Ethan Jones (E006)",
+        "EIGL-Finance"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:09.6686962Z",
+      "activityDisplayName": "Add member to group",
+      "result": "success",
+      "labTargets": [
+        "Ethan Jones (E006)",
+        "EIGL-All-Employees"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:09.4682327Z",
+      "activityDisplayName": "Add member to group",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)",
+        "EIGL-People-Managers"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:09.2605091Z",
+      "activityDisplayName": "Add member to group",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)",
+        "EIGL-Finance"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:09.0523061Z",
+      "activityDisplayName": "Add member to group",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)",
+        "EIGL-All-Employees"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:08.8508989Z",
+      "activityDisplayName": "Add member to group",
+      "result": "success",
+      "labTargets": [
+        "Liam Smith (E002)",
+        "EIGL-Engineering"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:08.6370217Z",
+      "activityDisplayName": "Add user",
+      "result": "success",
+      "labTargets": [
+        "Ethan Jones (E006)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:08.4216929Z",
+      "activityDisplayName": "Update PasswordProfile",
+      "result": "success",
+      "labTargets": [
+        "Ethan Jones (E006)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:08.3107313Z",
+      "activityDisplayName": "Add user",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:08.123729Z",
+      "activityDisplayName": "Update PasswordProfile",
+      "result": "success",
+      "labTargets": [
+        "Aisha Khan (E005)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:08.0114287Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Liam Smith (E002)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:07.8026613Z",
+      "activityDisplayName": "Remove member from group",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)",
+        "EIGL-Finance"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:07.6076161Z",
+      "activityDisplayName": "Remove member from group",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)",
+        "EIGL-All-Employees"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:07.4159663Z",
+      "activityDisplayName": "Remove member from group",
+      "result": "success",
+      "labTargets": [
+        "Liam Smith (E002)",
+        "EIGL-Finance"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:07.2199019Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:07.218904Z",
+      "activityDisplayName": "Update StsRefreshTokenValidFrom Timestamp",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:06.9386302Z",
+      "activityDisplayName": "Update user",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)"
+      ]
+    },
+    {
+      "activityDateTime": "2026-09-04T16:08:06.9366287Z",
+      "activityDisplayName": "Disable account",
+      "result": "success",
+      "labTargets": [
+        "Sofia Rossi (E003)"
+      ]
+    }
+  ]
+}

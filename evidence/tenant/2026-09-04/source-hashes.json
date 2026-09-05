@@ -1,0 +1,33 @@
+{
+    "note":  "Hashes identify private raw source files retained locally; they are not independent attestation. Raw sources are not published.",
+    "sources":  [
+                    {
+                        "filename":  "before.json",
+                        "sha256":  "ccd6cb0d5810cf02d5d8f7d1a0738ce93fc386babbbbcfc212f7a9320cacc15a"
+                    },
+                    {
+                        "filename":  "after.json",
+                        "sha256":  "7f48693d755ddfef8000467603153b78c3d25bc6971313a9b656bfba52ac6d4c"
+                    },
+                    {
+                        "filename":  "apply-result.json",
+                        "sha256":  "6e5ec226c9ad5562f6355b8a8ad7695a356663ac0e71bf24f1f8b590ace5c6d4"
+                    },
+                    {
+                        "filename":  "approved-plan.json",
+                        "sha256":  "035b595d7c5fff60d0620c904943895fc51b3b0f4688eec0cb5ef6f390aed72f"
+                    },
+                    {
+                        "filename":  "preflight.json",
+                        "sha256":  "60523c569ec6b997f1e29045f59679f4011eea664001d887207e389bf739fcc3"
+                    },
+                    {
+                        "filename":  "sofia-session-state-before.json",
+                        "sha256":  "60f26f2791b69d6c99887bbd71ec8d86854af36404984912630cc04b13991064"
+                    },
+                    {
+                        "filename":  "sofia-session-state-after.json",
+                        "sha256":  "eae76736e6efe36e991a76063c19b8d02e11a46886fc8bef22bfd4aeecca4935"
+                    }
+                ]
+}

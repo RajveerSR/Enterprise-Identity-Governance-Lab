@@ -2,7 +2,9 @@
 
 A small, plan-first Microsoft Entra identity administration lab for demonstrating joiner, mover and leaver (JML) controls, group-based access, least privilege, Privileged Identity Management (PIM), access reviews and defensible automation decisions.
 
-Status: **local v0.2 implemented and tested; Graph mutation, PIM and access reviews are prepared but not tenant-tested.** No tenant was changed during either local implementation pass. Every checked-in identity, object ID, state snapshot and evidence sample is synthetic.
+Status: **live joiner/mover/leaver automation verified on 4 September 2026: 17 operations succeeded, with fresh Graph readback. PIM and access reviews remain pending.** Checked-in configuration and local test fixtures are synthetic; the separately labelled [live evidence pack](evidence/tenant/2026-09-04/README.md) contains redacted real observations and a screenshot checklist.
+
+A [5 September follow-up](evidence/tenant/2026-09-05/README.md) confirms all six users still match the lifecycle result, adds 25 service-side audit records from the original change window, and verifies Maya as Finance's owner. PIM activation and access-review execution still need interactive preparation.
 
 ## What the demonstration shows
 
@@ -24,12 +26,12 @@ employees.csv + organisation.json + observed state
                     |
           preview JSON (default)
                     |
-       explicit gated apply (future tenant)
+       explicit gated apply (reviewed plan)
                     |
             Microsoft Graph v1.0
 ```
 
-The core planner in `src/` has no cloud dependency. `scripts/` contains entry points; `config/` contains synthetic desired/observed data; `docs/` explains controls and portal exercises; `evidence/` separates examples from future tenant evidence; and `learning/` maps the work to SC-300.
+The core planner in `src/` has no cloud dependency. `scripts/` contains entry points; `config/` contains synthetic desired/observed data; `docs/` explains controls and portal exercises; `evidence/` separates synthetic examples from redacted live tenant evidence; and `learning/` maps the work to SC-300.
 
 ## Quick start
 
@@ -43,7 +45,7 @@ Windows PowerShell 5.1 or PowerShell 7 can run the local workflow:
 
 The preview proposes 17 operations: two joiners, one department mover and one leaver. The verification command returns compliant for the converged synthetic state. Generated runs go to ignored `evidence/runs/`; they are not real evidence.
 
-The regression suite currently contains 32 tests. Graph export tests use mocked response/error objects, including pagination; they do not claim real tenant compatibility.
+The lifecycle regression suite contains 32 tests, with four additional governance-readiness export tests. Graph export tests use mocked response/error objects, including pagination; they do not claim real tenant compatibility.
 
 Do not run the apply entry point until the tenant prerequisites and safety checklist in [setup](docs/setup.md) are complete. The checked-in configuration has `allowMutation: false`, placeholder IDs and cannot pass the apply gates.
 
@@ -58,6 +60,14 @@ Do not run the apply entry point until the tenant prerequisites and safety check
 7. [Access review runbook](docs/runbooks/access-review.md)
 8. [Evidence index](evidence/README.md) and [completion checklist](docs/completion-checklist.md)
 9. [SC-300 mapping](learning/sc-300-mapping.md)
+
+## Interview walkthrough
+
+1. Show the access matrix and explain the joiner, mover and leaver triggers.
+2. Open the live before/after table: Liam's department move, Sofia's disablement and the two joiners.
+3. Show the execution journal alongside the service-side audit and later state readback.
+4. Explain removal-before-addition dependencies, partial failures and why a revocation request is not proof that every application session ended.
+5. Describe PIM and access review as the remaining demonstrations; do not present their runbooks as completed exercises.
 
 ## Ownership boundary
 

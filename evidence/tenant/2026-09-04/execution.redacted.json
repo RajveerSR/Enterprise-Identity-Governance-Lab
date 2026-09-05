@@ -1,0 +1,158 @@
+{
+    "classification":  "Real execution journal with fresh Graph readback",
+    "executedAtUtc":  "2026-09-04T16:08:10.4468829Z",
+    "status":  "Succeeded",
+    "succeeded":  17,
+    "failed":  0,
+    "skipped":  0,
+    "results":  [
+                    {
+                        "operationId":  "op-005",
+                        "employeeId":  "E003",
+                        "type":  "DisableUser",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-006",
+                        "employeeId":  "E003",
+                        "type":  "RevokeSignInSessions",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-002",
+                        "employeeId":  "E002",
+                        "type":  "RemoveGroupMember",
+                        "groupKey":  "finance",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-007",
+                        "employeeId":  "E003",
+                        "type":  "RemoveGroupMember",
+                        "groupKey":  "all-employees",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-008",
+                        "employeeId":  "E003",
+                        "type":  "RemoveGroupMember",
+                        "groupKey":  "finance",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-001",
+                        "employeeId":  "E002",
+                        "type":  "UpdateUser",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-009",
+                        "employeeId":  "E005",
+                        "type":  "CreateUser",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "User created; temporary password was not logged."
+                    },
+                    {
+                        "operationId":  "op-014",
+                        "employeeId":  "E006",
+                        "type":  "CreateUser",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "User created; temporary password was not logged."
+                    },
+                    {
+                        "operationId":  "op-003",
+                        "employeeId":  "E002",
+                        "type":  "AddGroupMember",
+                        "groupKey":  "engineering",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-010",
+                        "employeeId":  "E005",
+                        "type":  "AddGroupMember",
+                        "groupKey":  "all-employees",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-011",
+                        "employeeId":  "E005",
+                        "type":  "AddGroupMember",
+                        "groupKey":  "finance",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-012",
+                        "employeeId":  "E005",
+                        "type":  "AddGroupMember",
+                        "groupKey":  "people-managers",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-015",
+                        "employeeId":  "E006",
+                        "type":  "AddGroupMember",
+                        "groupKey":  "all-employees",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-016",
+                        "employeeId":  "E006",
+                        "type":  "AddGroupMember",
+                        "groupKey":  "finance",
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-004",
+                        "employeeId":  "E002",
+                        "type":  "SetManager",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-013",
+                        "employeeId":  "E005",
+                        "type":  "SetManager",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    },
+                    {
+                        "operationId":  "op-017",
+                        "employeeId":  "E006",
+                        "type":  "SetManager",
+                        "groupKey":  null,
+                        "status":  "Succeeded",
+                        "message":  "Microsoft Graph operation completed."
+                    }
+                ],
+    "sessionRevocation":  {
+                              "employeeId":  "E003",
+                              "property":  "signInSessionsValidFromDateTime",
+                              "beforeUtc":  "2026-09-04T15:54:41.0000000Z",
+                              "afterUtc":  "2026-09-04T16:08:07.0000000Z",
+                              "interpretation":  "Graph accepted the revocation operation and the server timestamp advanced. Active application-session behaviour was not tested."
+                          },
+    "persistentStateChangesRemaining":  0,
+    "remainingPlannerOperations":  [
+                                       "RevokeSignInSessions"
+                                   ],
+    "remainingOperationExplanation":  "The exporter does not infer historical revocation. The planner repeats this action on fresh snapshots; zero-operation tenant convergence is not claimed."
+}

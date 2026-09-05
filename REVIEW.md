@@ -1,69 +1,27 @@
-# Claude Code review handoff
+# Independent review handoff
 
-## Follow-up implementation summary
+## Current state — 5 September 2026
 
-- Plan schema 2 now hashes a deterministic payload containing schema version, integrity-payload version, mode, tenant ID, operation content and dependencies. Unsupported versions, duplicate/missing/forward dependencies and metadata changes fail verification. Zero-, one- and multi-operation JSON round trips pass.
-- `scope.managedUserObjectIds` is mandatory, non-null and array-typed. `[]` authorizes no existing users while allowing scoped joiners. Planner and apply-boundary checks share the same validation; emergency UPNs still override allow signals.
-- Every mover replacement group addition depends on all obsolete managed-group removals for that employee. One failed removal skips replacement access, while other removals and unrelated users continue. Refresh/re-plan retains only outstanding work.
-- Leaver containment is deliberately independent by default: disable, revoke and managed removals continue after another containment failure. Any failure/skipped action makes the overall result `Failed`; `partiallyCompleted` is explicit. `-StopOnFailure` is tested as an operator-selected alternative.
-- Graph export logic moved into an injectable module function. Only structured HTTP 404 or recognized Graph not-found codes mean absence. Message-only errors and 401/403/429/503/connectivity failures remain visible and prevent snapshot output. Pagination and manager/user behavior are mocked locally.
-- Permissions were rechecked on 4 September 2026 against official Microsoft Learn. Profile update (`User.ReadUpdate.All`) and manager assignment (`User.ReadWrite.All`) are separate; the combined write workflow retains `User.ReadWrite.All` because manager assignment requires it.
+The live JML run completed 17 operations successfully on 4 September using commit `77a29f7`. A later read of all six users, their managers and five managed groups found zero persistent-state differences. The original execution window yielded 25 successful lab-target directory audit records; these are not a one-to-one operation count.
 
-## Meaningful local commits
+Maya is now the verified owner of EIGL-Finance, independently of the two reviewed Finance members. Aisha and Ethan have P2 licences. PIM/access-review reads return HTTP 403 in the existing CLI session; those settings remain unknown and their demonstrations are unrun.
 
-- `8c01b5e` — plan integrity and strict scope validation.
-- `9d498c3` — mover dependency and leaver failure semantics.
-- `e4a72c2` — structured read-only Graph export and permission/readiness documentation.
-- A final evidence/handoff commit follows these and should contain only version/reporting artifacts.
+## Local verification and boundaries
 
-No history was rewritten and nothing was pushed.
+- 32 existing lifecycle/integrity/scope/dependency/export tests pass.
+- Four new read-only governance export tests pass: tenant mismatch, complete pagination, permission failure and untrusted pagination refusal. These use mocked Graph calls.
+- `Export-GovernanceReadiness.ps1` requires an existing delegated session in the exact expected tenant, performs GETs only and labels partial exports as incomplete before failing.
+- `config/access-review.example.json` is a synthetic supervised pilot template: one instance, named reviewer, manual apply, no automatic no-response removal or email notifications. It is not a deployed review.
+- PIM settings and eligibility remain pending fresh reads and appropriate delegated consent. No active Entra role was assigned.
 
-## Regression and verification results
+Earlier implementation milestones remain in history: `8c01b5e` integrity/scope; `9d498c3` mover/leaver failure handling; `e4a72c2` structured Graph export. No history was rewritten and nothing was pushed remotely.
 
-Before fixes, the new regressions reproduced:
+## Review focus
 
-- 13 passed / 3 failed for tenant/mode integrity and missing allowlist.
-- 21 passed / 6 failed after adding mover/leaver expectations.
-- 29 passed / 3 failed before the structured exporter seams existed.
+1. Correlate the [live lifecycle pack](evidence/tenant/2026-09-04/README.md) with [follow-up state and directory audit](evidence/tenant/2026-09-05/README.md).
+2. Preserve the distinction between persistent state convergence and the repeated revocation action in a fresh plan.
+3. Check permission-error handling: an unreadable PIM/review endpoint must not be reported as empty or configured.
+4. Before PIM setup, read the current role policy and assignments; changes to a role's policy affect its other assignees too. Prepare eligibility, not a permanent active role.
+5. Before access-review execution, prepare an explicit stale membership during the supervised window, collect decisions and verify applied removal without reintroducing it through JML.
 
-Final command:
-
-```text
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\Invoke-Tests.ps1
-```
-
-Result: **32 passed, 0 failed**. This includes existing unmanaged-membership and joiner/manager dependency coverage plus the follow-up regressions.
-
-Local planning still produces **17 preview operations** (2 create, 1 update, 1 disable, 1 revoke, 6 add membership, 3 remove membership, 3 set manager) using plan schema 2 / integrity payload 1. The converged snapshot verifies with zero differences. Cleanup remains an 18-operation preview. The checked-in apply configuration stops at `allowMutation: false`. No tenant command was run.
-
-## Implemented, mocked and unverified
-
-- Locally executed: validation, reconciliation, plan serialization/integrity, scope boundary, executor dependency/failure behavior, converged verification, planning and cleanup preview.
-- Mocked: Graph user/manager 404s, pagination, created-user ID propagation, partial mutations, 401/403/429/503/connectivity failures.
-- Implemented but tenant-unverified: actual `Invoke-MgGraphRequest` response/error shapes, Graph snapshot, user/group/manager mutations and result correlation.
-- Documented only: tenant group creation, PIM activation and access review.
-
-## Known limitations and unresolved decisions
-
-- SHA-256 is change detection, not a signature, authenticated approval or provenance control.
-- Real Graph exception shapes may differ from mocks; first tenant work must be read-only and must confirm 404/pagination behavior.
-- State export covers exact input UPNs and direct configured-group memberships only, not transitive/dynamic access, licences, app sessions, devices or Azure RBAC.
-- A live snapshot cannot prove prior session revocation, so repeated revocation can remain planned.
-- No retry/backoff, batch support or automatic rollback. Recovery is refresh, inspect and re-plan.
-- Establish the disposable tenant, verified domain, five group IDs, emergency UPNs, any existing managed-user IDs, read-scope consent and operator access.
-- Choose a durable production ownership marker and a Temporary Access Pass or other approved onboarding handoff before production-style use.
-- Confirm the available tenant licence supports the chosen PIM/access-review options.
-
-## First read-only tenant milestone
-
-Follow `docs/setup.md`: create ignored `organisation.local.json` and `employees.local.csv`, keep `allowMutation` false, fill real identifiers, connect with only `User.Read.All` and `GroupMember.ReadBasic.All`, export state, generate a plan and inspect every object/removal/dependency. Stop before apply. Any non-404 Graph failure must leave no new snapshot.
-
-## Claude review checklist
-
-- [ ] Recalculate/tamper schema-2 payload fields and confirm integrity fails as intended.
-- [ ] Try missing, null, scalar and empty `managedUserObjectIds` at planner and apply boundaries.
-- [ ] Trace E006's two create dependencies and an E002 multiple-removal failure.
-- [ ] Verify leaver default continuation, overall failure and `-StopOnFailure` behavior.
-- [ ] Inspect structured error extraction for likely Microsoft.Graph exception shapes and false-404 risk.
-- [ ] Recheck the split profile/manager permissions and read-only consent set against current official docs.
-- [ ] Confirm documentation does not present mocked output as tenant evidence.
+The live CLI session used broad delegated directory privileges. Code scope checks do not narrow that token, and this project has not demonstrated a least-privilege service identity. No live cleanup or open-application-session invalidation test has been performed.

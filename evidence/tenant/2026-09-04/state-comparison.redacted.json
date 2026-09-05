@@ -1,0 +1,138 @@
+{
+    "classification":  "Redacted real Microsoft Graph observations; these are not synthetic fixtures or portal screenshots.",
+    "redactions":  "Tenant, operator, user object IDs, domain and UPNs omitted. Fictional lab employee names, employee IDs and observed properties retained.",
+    "before":  {
+                   "capturedAtUtc":  "2026-09-04T16:08:06.2333550Z",
+                   "users":  [
+                                 {
+                                     "employeeId":  "E001",
+                                     "displayName":  "Maya Chen",
+                                     "jobTitle":  "Operations Director",
+                                     "department":  "Operations",
+                                     "managerEmployeeId":  null,
+                                     "accountEnabled":  true,
+                                     "groupKeys":  [
+                                                       "all-employees",
+                                                       "operations",
+                                                       "people-managers"
+                                                   ]
+                                 },
+                                 {
+                                     "employeeId":  "E002",
+                                     "displayName":  "Liam Smith",
+                                     "jobTitle":  "",
+                                     "department":  "Finance",
+                                     "managerEmployeeId":  null,
+                                     "accountEnabled":  true,
+                                     "groupKeys":  [
+                                                       "all-employees",
+                                                       "finance"
+                                                   ]
+                                 },
+                                 {
+                                     "employeeId":  "E003",
+                                     "displayName":  "Sofia Rossi",
+                                     "jobTitle":  "Finance Analyst",
+                                     "department":  "Finance",
+                                     "managerEmployeeId":  null,
+                                     "accountEnabled":  true,
+                                     "groupKeys":  [
+                                                       "all-employees",
+                                                       "finance"
+                                                   ]
+                                 },
+                                 {
+                                     "employeeId":  "E004",
+                                     "displayName":  "Noah Williams",
+                                     "jobTitle":  "Engineering Manager",
+                                     "department":  "Engineering",
+                                     "managerEmployeeId":  "E001",
+                                     "accountEnabled":  true,
+                                     "groupKeys":  [
+                                                       "all-employees",
+                                                       "engineering",
+                                                       "people-managers"
+                                                   ]
+                                 }
+                             ]
+               },
+    "after":  {
+                  "capturedAtUtc":  "2026-09-04T16:08:12.1338844Z",
+                  "users":  [
+                                {
+                                    "employeeId":  "E001",
+                                    "displayName":  "Maya Chen",
+                                    "jobTitle":  "Operations Director",
+                                    "department":  "Operations",
+                                    "managerEmployeeId":  null,
+                                    "accountEnabled":  true,
+                                    "groupKeys":  [
+                                                      "all-employees",
+                                                      "operations",
+                                                      "people-managers"
+                                                  ]
+                                },
+                                {
+                                    "employeeId":  "E002",
+                                    "displayName":  "Liam Smith",
+                                    "jobTitle":  "Platform Engineer",
+                                    "department":  "Engineering",
+                                    "managerEmployeeId":  "E004",
+                                    "accountEnabled":  true,
+                                    "groupKeys":  [
+                                                      "all-employees",
+                                                      "engineering"
+                                                  ]
+                                },
+                                {
+                                    "employeeId":  "E003",
+                                    "displayName":  "Sofia Rossi",
+                                    "jobTitle":  "Finance Analyst",
+                                    "department":  "Finance",
+                                    "managerEmployeeId":  null,
+                                    "accountEnabled":  false,
+                                    "groupKeys":  [
+
+                                                  ]
+                                },
+                                {
+                                    "employeeId":  "E004",
+                                    "displayName":  "Noah Williams",
+                                    "jobTitle":  "Engineering Manager",
+                                    "department":  "Engineering",
+                                    "managerEmployeeId":  "E001",
+                                    "accountEnabled":  true,
+                                    "groupKeys":  [
+                                                      "all-employees",
+                                                      "engineering",
+                                                      "people-managers"
+                                                  ]
+                                },
+                                {
+                                    "employeeId":  "E005",
+                                    "displayName":  "Aisha Khan",
+                                    "jobTitle":  "Finance Manager",
+                                    "department":  "Finance",
+                                    "managerEmployeeId":  "E001",
+                                    "accountEnabled":  true,
+                                    "groupKeys":  [
+                                                      "all-employees",
+                                                      "finance",
+                                                      "people-managers"
+                                                  ]
+                                },
+                                {
+                                    "employeeId":  "E006",
+                                    "displayName":  "Ethan Jones",
+                                    "jobTitle":  "Financial Accountant",
+                                    "department":  "Finance",
+                                    "managerEmployeeId":  "E005",
+                                    "accountEnabled":  true,
+                                    "groupKeys":  [
+                                                      "all-employees",
+                                                      "finance"
+                                                  ]
+                                }
+                            ]
+              }
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "sourceFilename": "governance-current-state-20260905.private.json",
+    "sha256": "94ba9a4ca05ffc88b5b791361cc15c78dbc2e5aa797dc096048fb5ff1c08e495"
+  },
+  {
+    "sourceFilename": "governance-jml-audit-20260905.private.json",
+    "sha256": "009f8320ab1a581f8b4bebb205f4bc8d493cf6ea1464177b418e6705010ca69d"
+  },
+  {
+    "sourceFilename": "finance-owner-20260905.private.json",
+    "sha256": "6da0fe2d5ffd95c48ac014e67cdbf8b927279828ad1e9983d701e635fdea18e2"
+  }
+]

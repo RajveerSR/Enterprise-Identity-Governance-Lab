@@ -1,15 +1,12 @@
 # Evidence index
 
-Nothing checked in here is real tenant evidence.
-
-| Artifact | Classification | What it proves |
+| Artifact | Classification | What it establishes |
 |---|---|---|
-| `plan-summary.example.json` | Synthetic local example | Expected operation counts and explicit preview label |
-| `test-results.example.txt` | Synthetic local example | 32 offline safety/reconciliation and mocked Graph-export tests passed on 4 Sep 2026 |
-| `runs/` | Generated, git-ignored | Local plans and future redacted execution records |
+| `plan-summary.example.json` and `test-results.example.txt` | Synthetic examples / historical local report | Expected shape and prior local verification; not tenant execution |
+| `runs/` | Generated, ignored | Private plans and execution records |
+| [4 September lifecycle](tenant/2026-09-04/README.md) | Redacted real execution and readback | 17 successful JML operations and observed before/after state |
+| [5 September follow-up](tenant/2026-09-05/README.md) | Redacted real Graph evidence | Persistent state, original-window directory audit and Finance ownership |
 
-Future tenant evidence should use filenames such as `tenant-01-pim-settings.redacted.png` and include capture time, tenant purpose, test case, expected/actual result and redaction note. Capture Entra audit/PIM/access-review records, not just portal success banners. Never commit tokens, credentials, temporary passwords, full tenant IDs, production UPNs or raw sensitive exports.
+The current verification has 32 lifecycle tests plus four governance-readiness export tests. Graph mocks establish local behavior only. Portal screenshots, PIM activation, access-review decisions and cleanup remain pending.
 
-The completion checklist in `docs/completion-checklist.md` connects every capability to expected evidence.
-
-Mocked Graph tests prove local branching and pagination logic only. They are not tenant evidence and do not prove the response/error shape of the installed Graph module against a live service.
+Never publish tokens, passwords, QR codes, raw audit property values or personal account details. Preserve original private artifacts; publish selected fields and explicit limitations. A diagram or table derived from Graph is not an original portal screenshot.

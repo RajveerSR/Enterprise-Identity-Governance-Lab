@@ -1,0 +1,85 @@
+{
+  "capturedAtUtc": "2026-09-05T19:22:38.567635+00:00",
+  "source": "Fresh Graph reads of exact managed users, managers and five group membership lists",
+  "users": [
+    {
+      "employeeId": "E001",
+      "displayName": "Maya Chen",
+      "jobTitle": "Operations Director",
+      "department": "Operations",
+      "accountEnabled": true,
+      "managerEmployeeId": null,
+      "groupKeys": [
+        "all-employees",
+        "operations",
+        "people-managers"
+      ],
+      "p2Assigned": true
+    },
+    {
+      "employeeId": "E002",
+      "displayName": "Liam Smith",
+      "jobTitle": "Platform Engineer",
+      "department": "Engineering",
+      "accountEnabled": true,
+      "managerEmployeeId": "E004",
+      "groupKeys": [
+        "all-employees",
+        "engineering"
+      ],
+      "p2Assigned": true
+    },
+    {
+      "employeeId": "E003",
+      "displayName": "Sofia Rossi",
+      "jobTitle": "Finance Analyst",
+      "department": "Finance",
+      "accountEnabled": false,
+      "managerEmployeeId": null,
+      "groupKeys": [],
+      "p2Assigned": true
+    },
+    {
+      "employeeId": "E004",
+      "displayName": "Noah Williams",
+      "jobTitle": "Engineering Manager",
+      "department": "Engineering",
+      "accountEnabled": true,
+      "managerEmployeeId": "E001",
+      "groupKeys": [
+        "all-employees",
+        "engineering",
+        "people-managers"
+      ],
+      "p2Assigned": true
+    },
+    {
+      "employeeId": "E005",
+      "displayName": "Aisha Khan",
+      "jobTitle": "Finance Manager",
+      "department": "Finance",
+      "accountEnabled": true,
+      "managerEmployeeId": "E001",
+      "groupKeys": [
+        "all-employees",
+        "finance",
+        "people-managers"
+      ],
+      "p2Assigned": true
+    },
+    {
+      "employeeId": "E006",
+      "displayName": "Ethan Jones",
+      "jobTitle": "Financial Accountant",
+      "department": "Finance",
+      "accountEnabled": true,
+      "managerEmployeeId": "E005",
+      "groupKeys": [
+        "all-employees",
+        "finance"
+      ],
+      "p2Assigned": true
+    }
+  ],
+  "differencesFromSeptember4Readback": []
+}

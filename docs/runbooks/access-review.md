@@ -24,4 +24,12 @@ Microsoft's current feature guidance lists Microsoft Entra ID P2 or Microsoft En
 - Applied results match group membership and are traceable in review/audit history.
 - The lifecycle planner is run afterward and remains consistent; an unauthorized manual membership is not reintroduced by the access matrix.
 
-Status: documented only; requires a licensed tenant and has not been configured or tested.
+Status on 5 September: Maya (Operations Director) is the verified Finance group owner; Aisha and Ethan are its two members. All have P2 assignments. The existing CLI session cannot read access-review definitions (HTTP 403), so an existing review is not assumed absent.
+
+For the first supervised run, use `config/access-review.example.json` as a template, resolve the exact group and Maya IDs, and choose the actual start date. Its initial pilot is one instance with manual apply, no email notifications and no automatic no-response removals. This deliberately leaves decisions and removal under supervision while interactive testing is pending; it does not demonstrate the monthly auto-apply settings above.
+
+During the supervised window, deliberately add Liam to Finance as the stale membership, capture that starting state, then have Maya retain Aisha/Ethan and deny Liam with reasons. Apply the completed review, confirm Liam loses Finance while retaining Engineering, and verify JML does not reintroduce Finance. Do not create stale access or a recurring removal timer while the reviewer is absent.
+
+After the supervised result is verified, separately demonstrate the monthly recurrence/no-response/auto-apply configuration if retaining that acceptance requirement. Review and application of real decisions are not automated approvals by the assistant.
+
+`AccessReview.Read.All` supports the pending inventory; creation later requires `AccessReview.ReadWrite.All` and an appropriate directory role. See [Microsoft Graph review creation](https://learn.microsoft.com/en-us/graph/api/accessreviewset-post-definitions?view=graph-rest-1.0).

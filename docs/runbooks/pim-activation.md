@@ -23,4 +23,10 @@ Microsoft currently requires Microsoft Entra ID P2 or Microsoft Entra ID Governa
 - Evidence includes licence edition, role settings, eligibility, request/approval and audit history.
 - No emergency-access identity is made eligible or used as approver.
 
-Status: documented only; requires a licensed tenant and has not been configured or tested.
+Status on 5 September: P2 is present and lab identities exist, but PIM reads are blocked by the existing CLI session's permissions. No eligibility/settings/activation result is claimed.
+
+Before making changes, run `scripts/Export-GovernanceReadiness.ps1` in an authenticated delegated Graph session. Use `RoleManagement.Read.Directory` and `RoleManagementPolicy.Read.Directory` for the role/eligibility/settings inventory. Resolve User Administrator from the service, inspect existing assignees and save the current rules. Role settings are shared by other assignees of that role; do not replace an unread policy or discard stronger existing controls.
+
+Prepared target: Noah eligible for seven days, maximum one-hour activation, MFA, justification and Maya's approval. Start the eligibility window only when the supervised exercise is ready. Maya/Noah must complete their own sign-ins and MFA/approval steps. No permanent active assignment or automated self-approval is part of the exercise.
+
+For later setup, Microsoft documents `RoleEligibilitySchedule.ReadWrite.Directory` for eligibility requests and `RoleManagementPolicy.ReadWrite.Directory` for rule updates. These write scopes are not requested by the prepared read-only script. Sources: [eligibility requests](https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleeligibilityschedulerequests?view=graph-rest-1.0), [policy rules](https://learn.microsoft.com/en-us/graph/api/unifiedrolemanagementpolicyrule-update?view=graph-rest-1.0).
