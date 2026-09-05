@@ -4,3 +4,7 @@ evidence/runs/*
 *.local.json
 *.local.csv
 *.secret.json
+
+*.private.json
+
+*.private.png
