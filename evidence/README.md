@@ -6,7 +6,8 @@
 | `runs/` | Generated, ignored | Private plans and execution records |
 | [4 September lifecycle](tenant/2026-09-04/README.md) | Redacted real execution and readback | 17 successful JML operations and observed before/after state |
 | [5 September follow-up](tenant/2026-09-05/README.md) | Redacted real Graph evidence | Persistent state, original-window directory audit and Finance ownership |
+| [6 September PIM](tenant/2026-09-06/README.md) | Genuine portal screenshots | User Administrator policy change, eligibility, approval request and one-hour active assignment |
 
-The current verification has 32 lifecycle tests plus four governance-readiness export tests. Graph mocks establish local behavior only. Portal screenshots, PIM activation, access-review decisions and cleanup remain pending.
+The current verification has 32 lifecycle tests plus four governance-readiness export tests. Graph mocks establish local behavior only. The PIM activation is now backed by genuine portal screenshots. Post-expiry PIM state, access-review decisions and cleanup remain pending.
 
 Never publish tokens, passwords, QR codes, raw audit property values or personal account details. Preserve original private artifacts; publish selected fields and explicit limitations. A diagram or table derived from Graph is not an original portal screenshot.

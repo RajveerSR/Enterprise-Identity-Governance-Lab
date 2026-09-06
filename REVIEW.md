@@ -1,10 +1,12 @@
 # Independent review handoff
 
-## Current state — 5 September 2026
+## Current state - 6 September 2026
 
 The live JML run completed 17 operations successfully on 4 September using commit `77a29f7`. A later read of all six users, their managers and five managed groups found zero persistent-state differences. The original execution window yielded 25 successful lab-target directory audit records; these are not a one-to-one operation count.
 
-Maya is now the verified owner of EIGL-Finance, independently of the two reviewed Finance members. Aisha and Ethan have P2 licences. PIM/access-review reads return HTTP 403 in the existing CLI session; those settings remain unknown and their demonstrations are unrun.
+Maya is the verified owner of EIGL-Finance, independently of its two Finance members. A fresh delegated read succeeded for role definitions, role eligibility, active assignments, role policies and access-review definitions. The tenant contained no eligibility and no access reviews at read time. A separate licence read confirmed 25 Entra ID P2 units with seven consumed; Noah and Maya were both observed with P2 assigned.
+
+The supervised PIM exercise changed only the User Administrator activation controls: maximum duration was reduced from eight hours to one, MFA and justification remained required, and approval was enabled. Noah received a seven-day eligible assignment, his justified activation appeared in Maya's approval queue, and the resulting direct directory-scoped assignment was observed active for one hour. Post-expiry or manual-deactivation state was not captured. See the [6 September PIM evidence](evidence/tenant/2026-09-06/README.md).
 
 ## Local verification and boundaries
 
@@ -12,7 +14,8 @@ Maya is now the verified owner of EIGL-Finance, independently of the two reviewe
 - Four new read-only governance export tests pass: tenant mismatch, complete pagination, permission failure and untrusted pagination refusal. These use mocked Graph calls.
 - `Export-GovernanceReadiness.ps1` requires an existing delegated session in the exact expected tenant, performs GETs only and labels partial exports as incomplete before failing.
 - `config/access-review.example.json` is a synthetic supervised pilot template: one instance, named reviewer, manual apply, no automatic no-response removal or email notifications. It is not a deployed review.
-- PIM settings and eligibility remain pending fresh reads and appropriate delegated consent. No active Entra role was assigned.
+- The delegated readiness export marked itself incomplete because its consent set omitted the licence-read permission required by `/subscribedSkus`; every governance and PIM endpoint in that export succeeded. Licence state was confirmed separately and the partial export remains private.
+- The PIM screenshots establish the policy change, eligibility, approval request and bounded active state. They do not establish expiry, deactivation or a privileged task performed by Noah.
 
 Earlier implementation milestones remain in history: `8c01b5e` integrity/scope; `9d498c3` mover/leaver failure handling; `e4a72c2` structured Graph export. No history was rewritten and nothing was pushed remotely.
 

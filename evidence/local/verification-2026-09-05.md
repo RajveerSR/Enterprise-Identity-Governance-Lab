@@ -1,4 +1,4 @@
-# Local verification — 5 September 2026
+# Local verification - 5 September 2026
 
 Executed in Windows PowerShell/Python on the local repository. These are actual local results; they do not establish unrun PIM or review behavior.
 

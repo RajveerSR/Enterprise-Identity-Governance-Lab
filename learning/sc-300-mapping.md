@@ -13,8 +13,8 @@
 
 1. HR sends E002 twice with different departments. Answer: reject the complete batch; don't pick the last row, because the authorization intent is ambiguous.
 2. A mover has an unmanaged project group. Answer: preserve it, notify that group's owner if review is needed, and remove only groups this controller owns.
-3. A leaver's refresh tokens are revoked. Can you claim immediate total logout? Answer: no—disable first, explain access-token lifetime, propagation delay, workload sessions and external home-tenant limits.
-4. A script has `GroupMember.ReadWrite.All`. Can its signed-in operator always change every group? Answer: no—delegated consent and the operator's directory role both matter; role-assignable groups impose stronger requirements.
+3. A leaver's refresh tokens are revoked. Can you claim immediate total logout? Answer: no. Disable first, explain access-token lifetime, propagation delay, workload sessions and external home-tenant limits.
+4. A script has `GroupMember.ReadWrite.All`. Can its signed-in operator always change every group? Answer: no. Delegated consent and the operator's directory role both matter; role-assignable groups impose stronger requirements.
 5. User Administrator versus Azure `Owner`: Answer: the first is a Microsoft Entra directory role; the second is Azure RBAC over an ARM scope. Neither implies the other.
 6. An apply fails halfway. Answer: don't blindly rollback access. Preserve results, refresh observed state, investigate authorization/scope and re-plan.
 

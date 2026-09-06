@@ -1,6 +1,6 @@
 # PIM activation scenario
 
-Scenario: Noah Williams needs occasional **User Administrator** access to support lab joiners. Make him eligible rather than permanently active, require MFA and justification, limit activation to one hour, and require approval by Maya Chen. This is a Microsoft Entra directory role—not Azure resource RBAC and not ordinary group access.
+Scenario: Noah Williams needs occasional **User Administrator** access to support lab joiners. Make him eligible rather than permanently active, require MFA and justification, limit activation to one hour, and require approval by Maya Chen. This is a Microsoft Entra directory role. Azure resource RBAC and ordinary group access are separate concepts.
 
 ## Licence and roles
 
@@ -23,7 +23,7 @@ Microsoft currently requires Microsoft Entra ID P2 or Microsoft Entra ID Governa
 - Evidence includes licence edition, role settings, eligibility, request/approval and audit history.
 - No emergency-access identity is made eligible or used as approver.
 
-Status on 5 September: P2 is present and lab identities exist, but PIM reads are blocked by the existing CLI session's permissions. No eligibility/settings/activation result is claimed.
+Status on 6 September: a fresh delegated read found no existing eligibility, one permanent Global Administrator assignment and the default User Administrator policy. The supervised exercise then changed the User Administrator activation maximum from eight hours to one, preserved MFA and justification, enabled approval, made Noah eligible for seven days and produced a one-hour active assignment after the request appeared in Maya's approval queue. See the [6 September evidence](../../evidence/tenant/2026-09-06/README.md). Expiry or manual deactivation was not captured.
 
 Before making changes, run `scripts/Export-GovernanceReadiness.ps1` in an authenticated delegated Graph session. Use `RoleManagement.Read.Directory` and `RoleManagementPolicy.Read.Directory` for the role/eligibility/settings inventory. Resolve User Administrator from the service, inspect existing assignees and save the current rules. Role settings are shared by other assignees of that role; do not replace an unread policy or discard stronger existing controls.
 
